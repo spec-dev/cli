@@ -33,7 +33,10 @@
     },
     "dependencies": {
         "chalk": "4.1.0",
-        "commander": "^9.4.0"
+        "commander": "^9.4.0",
+        "netrc": "^0.1.4",
+        "node-fetch": "^2.6.6",
+        "qoa": "^0.2.0"
     },
     "devDependencies": {
         "@types/node": "^18.0.3",

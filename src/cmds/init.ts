@@ -11,11 +11,15 @@ function addInitCmd(program) {
  * Initialize a new Spec project locally.
  */
 async function init() {
+    // Ensure Spec config directory doesn't already exist.
     if (specConfigDirExists()) {
         log('Spec project already initialized.')
         return
     }
+
+    // Create new Spec config directory + project/connection config files.
     createNewSpecConfig()
+    
     logSuccess('Inititalized new Spec project.')
 }
 
