@@ -1,4 +1,5 @@
-import { specConfigDirExists, createNewSpecConfig } from '../utils/file'
+import { specConfigDirExists } from '../config/dir'
+import { createNewSpecConfig } from '../config'
 import { log, logSuccess } from '../logger'
 
 const CMD = 'init'
@@ -19,7 +20,6 @@ async function init() {
 
     // Create new Spec config directory + project/connection config files.
     createNewSpecConfig()
-    
     logSuccess('Inititalized new Spec project.')
 }
 

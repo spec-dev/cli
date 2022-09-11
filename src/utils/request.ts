@@ -1,7 +1,11 @@
 import fetch from 'node-fetch'
 import { SpecApiResponse, StringKeyMap, StringMap } from '../types'
 
-export async function get(url: string, args: StringKeyMap, headers?: StringMap): Promise<SpecApiResponse> {
+export async function get(
+    url: string,
+    args: StringKeyMap,
+    headers?: StringMap
+): Promise<SpecApiResponse> {
     const params = new URLSearchParams()
     for (let key in args) {
         params.append(key, args[key])
@@ -9,11 +13,7 @@ export async function get(url: string, args: StringKeyMap, headers?: StringMap):
 
     let resp, err
     try {
-        resp = await fetch(url, {
-            method: 'GET',
-            body: params,
-            headers,
-        })
+        resp = await fetch(`${url}?${params.toString()}`, { headers })
     } catch (err) {
         err = err
     }
@@ -28,20 +28,24 @@ export async function get(url: string, args: StringKeyMap, headers?: StringMap):
     }
 }
 
-export async function post(url: string, payload: StringKeyMap, headers?: StringMap): Promise<SpecApiResponse> {
+export async function post(
+    url: string,
+    payload: StringKeyMap,
+    headers?: StringMap
+): Promise<SpecApiResponse> {
     let resp, err
     try {
         resp = await fetch(url, {
             method: 'POST',
             body: JSON.stringify(payload),
-            headers: { 
+            headers: {
                 'Content-Type': 'application/json',
                 ...(headers || {}),
             },
         })
     } catch (err) {
         err = err
-    }   
+    }
     if (err) return { error: err }
 
     const { data, error } = await parseJSONResp(resp)
@@ -62,6 +66,9 @@ async function parseJSONResp(resp: Response): Promise<SpecApiResponse> {
     }
     if (data.error) {
         return { error: data.error }
+    }
+    if (resp.status !== 200) {
+        return { error: `Request failed with status ${resp.status}.` }
     }
     return { data }
 }
