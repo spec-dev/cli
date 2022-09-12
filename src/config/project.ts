@@ -53,6 +53,18 @@ export function setProject(id: string, org: string, name: string): StringKeyMap 
     return saveProjectConfig(data)
 }
 
+export function getCurrentProject(): StringKeyMap {
+    // Ensure project config file exists.
+    if (!specProjectConfigFileExists()) {
+        return { error: null }
+    }
+
+    const { data, error } = getProjectConfig()
+    if (error) return { error }
+
+    return { data: data.project || null }
+}
+
 export function getProjectConfig(): StringKeyMap {
     try {
         const data = toml.parse(fs.readFileSync(constants.PROJECT_CONFIG_PATH, 'utf-8'), {

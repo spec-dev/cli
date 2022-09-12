@@ -3,6 +3,7 @@ import { createFileWithContents, fileExists, createDir } from '../utils/file'
 import toml, { Section } from '@ltd/j-toml'
 import constants from '../constants'
 import fs from 'fs'
+import { toMap } from '../utils/formatters'
 
 export function saveProjectCreds(
     org: string,
@@ -25,6 +26,21 @@ export function saveProjectCreds(
     creds[projectPath].apiKey = apiKey
 
     return saveGlobalCredsFile(creds)
+}
+
+export function getProjectCreds(projectId: string): StringKeyMap {
+    const { data, error } = readGlobalCredsFile()
+    if (error) return { error }
+
+    const creds = toMap(data || {})
+    for (const key in creds) {
+        const projectCreds = creds[key]
+        if (projectCreds.id === projectId) {
+            return { data: projectCreds }
+        }
+    }
+
+    return { data: null }
 }
 
 export function upsertSpecGlobalDir() {

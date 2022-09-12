@@ -11,3 +11,7 @@ export function logSuccess(...args: any[]) {
 export function logFailure(...args: any[]) {
     log(chalk.red(...args))
 }
+
+export function logWarning(...args: any[]) {
+    log(chalk.yellow(...args))
+}
