@@ -4,7 +4,8 @@ import { SpecApiResponse, StringKeyMap, StringMap } from '../types'
 export async function get(
     url: string,
     args: StringKeyMap,
-    headers?: StringMap
+    headers?: StringMap,
+    returnRawResponse?: boolean
 ): Promise<SpecApiResponse> {
     const params = new URLSearchParams()
     for (let key in args) {
@@ -18,6 +19,10 @@ export async function get(
         err = err
     }
     if (err) return { error: err }
+
+    if (returnRawResponse) {
+        return { data: resp }
+    }
 
     const { data, error } = await parseJSONResp(resp)
     if (error) return { error }

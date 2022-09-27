@@ -1,7 +1,8 @@
 export const INIT_DATABASE = `
 -- Create spec schema
 
-create schema if not exists spec AUTHORIZATION spec;
+create schema if not exists spec;
+grant usage on schema spec to spec;
 
 -- Give spec user access to the "spec" schema
 

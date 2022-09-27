@@ -4,11 +4,6 @@ import { logWarning, log } from '../logger'
 import { INIT_DATABASE } from './init'
 
 export function initDatabase(dbName: string): StringKeyMap {
-    // Check to make sure the DB hasn't already been initialized for Spec.
-    const { data: initialized, error } = specSchemaTablesExist(dbName)
-    if (error) return { error }
-    if (initialized) return { error: null }
-
     try {
         execSync(`psql -d ${dbName} -c "create user spec"`, { stdio: 'pipe' })
     } catch (err) {}

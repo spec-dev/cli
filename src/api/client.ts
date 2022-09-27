@@ -2,7 +2,6 @@ import { routes } from './routes'
 import { get, post } from '../utils/request'
 import constants from '../constants'
 import { LinkProjectResponse, LoginResponse, StringMap } from '../types'
-import { getSessionToken } from '../utils/auth'
 
 const formatAuthHeader = (sessionToken: string): StringMap => ({
     [constants.USER_AUTH_HEADER_NAME]: sessionToken,
@@ -40,10 +39,27 @@ async function linkProject(
     }
 }
 
+async function logs(projectId: string, sessionToken: string) {
+    // Perform logs request.
+    const { data: resp, error } = await get(
+        routes.PROJECT_LOGS,
+        { id: projectId },
+        formatAuthHeader(sessionToken),
+        true
+    )
+    if (error) return { error }
+
+    if (resp?.status !== 200) {
+        return { error: `Request failed with status ${resp?.status}.` }
+    }
+    return { data: resp.body }
+}
+
 async function deploy(projectId: string) {}
 
 export const client = {
     login,
     linkProject,
+    logs,
     deploy,
 }

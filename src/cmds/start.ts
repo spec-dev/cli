@@ -83,7 +83,7 @@ async function start() {
     log('Starting Spec...')
 
     // Run the Spec docker image.
-    const { error: dockerError } = runSpec(project.id, dbConfig.name, dbConfig.port)
+    const { error: dockerError } = runSpec(project.id, dbConfig.name, dbConfig.port, creds.apiKey)
     if (dockerError) {
         logFailure(`Error starting Spec docker image: ${dockerError}`)
         return

@@ -33,6 +33,7 @@
     },
     "dependencies": {
         "@ltd/j-toml": "1.30.0",
+        "@streamparser/json": "^0.0.8",
         "chalk": "4.1.0",
         "commander": "^9.4.0",
         "netrc": "^0.1.4",

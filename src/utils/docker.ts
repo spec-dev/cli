@@ -31,7 +31,7 @@ export function isSpecRunning(projectId: string): boolean {
     }
 }
 
-export function runSpec(projectId: string, dbName: string, dbPort: number): StringKeyMap {
+export function runSpec(projectId: string, dbName: string, dbPort: number, apiKey: string): StringKeyMap {
     try {
         execSync(
             `docker run -d \
@@ -39,7 +39,9 @@ export function runSpec(projectId: string, dbName: string, dbPort: number): Stri
                 -e DB_PORT=${dbPort || constants.DB_PORT} \
                 -e DB_NAME=${dbName} \
                 -e DB_USER=${constants.DB_USER} \
+                -e PROJECT_API_KEY=${apiKey} \
                 -e DEBUG='true' \
+                -e FORCE_COLOR=1 \
                 -v ${constants.SPEC_CONFIG_DIR}:/usr/app/${constants.SPEC_CONFIG_DIR_NAME} \
                 --name spec-${projectId} \
                 ${constants.SPEC_DOCKER_IMAGE}:latest`,
