@@ -9,6 +9,7 @@ const comments = {
     LIVE_OBJECTS_SECTION: '# = Live Objects (Sources) ------------------------------',
     LINKS_SECTION: '# = Links (Inputs) --------------------------------------',
     LIVE_COLUMNS_SECTION: '# = Live Columns (Outputs) ------------------------------',
+    DEFAULTS_SECTION: '# = Defaults --------------------------------------------',
 }
 
 const TEMPLATE = `${comments.PROJECT_SECTION}
@@ -83,49 +84,76 @@ export function saveProjectConfig(table: any): StringKeyMap {
         const doc = toml.stringify(table, { newlineAround: 'section', newline: '\n' })
         const sections = doc.split('\n\n')
 
-        let projectSection, objectsSection, linksSection, liveColsSection
+        for (const section of sections) {
+            console.log('\n')
+            console.log(section)
+        }
+
+        let projectSection
+        const objectSections = []
+        const linkSections = []
+        const liveColSections = []
+        const defaultSections = []
+        const otherSections = []
         for (const section of sections) {
             const sectionHeader = section.split('\n').filter((s) => !!s)[0]
 
             // Project section.
-            if (!projectSection && sectionHeader === '[project]') {
+            if (sectionHeader === '[project]') {
                 projectSection = section.trim()
+                continue
             }
 
-            // Objects section.
-            if (!objectsSection && sectionHeader.startsWith('[objects')) {
-                objectsSection = section
+            // Object sections.
+            if (sectionHeader.startsWith('[objects')) {
+                objectSections.push(section)
+                continue
             }
 
-            // Links section.
-            if (
-                !linksSection &&
-                sectionHeader.startsWith('[[objects') &&
-                sectionHeader.endsWith('.links]]')
-            ) {
-                linksSection = section
+            // Link sections.
+            if (sectionHeader.startsWith('[[objects') && sectionHeader.endsWith('.links]]')) {
+                linkSections.push(section)
+                continue
             }
 
             // Live Columns section.
-            if (!liveColsSection && sectionHeader.startsWith('[tables')) {
-                liveColsSection = section.trim()
+            if (sectionHeader.startsWith('[tables')) {
+                liveColSections.push(section)
+                continue
             }
+
+            // Defaults section.
+            if (sectionHeader.startsWith('[defaults')) {
+                defaultSections.push(section)
+                continue
+            }
+
+            otherSections.push(section)
         }
 
-        // I know this looks fucking weird but leave it - @ben
-        const newContents = `${comments.PROJECT_SECTION}
-${projectSection ? '\n' + projectSection : ''}
+        const newContents = [
+            comments.PROJECT_SECTION,
+            projectSection ? '\n' + projectSection : '',
+            '\n' + comments.LIVE_OBJECTS_SECTION,
+            ...(objectSections.length ? objectSections.map((section) => '\n' + section) : ['']),
+            '\n' + comments.LINKS_SECTION,
+            ...(linkSections.length ? linkSections.map((section) => '\n' + section) : ['']),
+            '\n' + comments.LIVE_COLUMNS_SECTION,
+            ...(liveColSections.length ? liveColSections.map((section) => '\n' + section) : ['']),
+        ]
 
-${comments.LIVE_OBJECTS_SECTION}
-${objectsSection ? '\n' + objectsSection : ''}
+        if (defaultSections.length) {
+            newContents.push(
+                ...[
+                    '\n' + comments.DEFAULTS_SECTION,
+                    ...defaultSections.map((section) => '\n' + section),
+                ]
+            )
+        }
 
-${comments.LINKS_SECTION}
-${linksSection ? '\n' + linksSection : ''}
+        newContents.push(...otherSections.map((section) => '\n' + section))
 
-${comments.LIVE_COLUMNS_SECTION}
-${liveColsSection ? '\n' + liveColsSection : '\n'}`
-
-        createFileWithContents(constants.PROJECT_CONFIG_PATH, newContents)
+        createFileWithContents(constants.PROJECT_CONFIG_PATH, newContents.join('\n').trim())
     } catch (err) {
         error = err
     }
