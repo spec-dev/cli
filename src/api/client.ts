@@ -52,6 +52,7 @@ async function logs(projectId: string, sessionToken: string) {
     if (resp?.status !== 200) {
         return { error: `Request failed with status ${resp?.status}.` }
     }
+    
     return { data: resp.body }
 }
 
