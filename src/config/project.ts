@@ -84,11 +84,6 @@ export function saveProjectConfig(table: any): StringKeyMap {
         const doc = toml.stringify(table, { newlineAround: 'section', newline: '\n' })
         const sections = doc.split('\n\n')
 
-        for (const section of sections) {
-            console.log('\n')
-            console.log(section)
-        }
-
         let projectSection
         const objectSections = []
         const linkSections = []
