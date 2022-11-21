@@ -1,23 +1,27 @@
 import { logFailure, log } from '../logger'
 import { client } from '../api/client'
-import constants from '../constants'
+import msg from '../utils/msg'
 import { Log, LogLevel } from '../types'
+import { getCurrentProjectId } from '../config/global'
 import { getSessionToken } from '../utils/auth'
-import { getCurrentProject } from '../config/project'
 import { JSONParser } from '@streamparser/json'
+import { followDockerLogs } from '../utils/docker'
 import chalk from 'chalk'
 import { exit } from 'process'
 
 const CMD = 'logs'
 
 function addLogsCmd(program) {
-    program.command(CMD).action(logs)
+    program
+        .command(CMD)
+        .option('--local', 'Display logs for the locally running Spec instance')
+        .action(logs)
 }
 
 /**
  * Tail the logs for the currently linked Spec project.
  */
-async function logs() {
+async function logs(options) {
     // Get authed user's session token (if any).
     const { token, error } = getSessionToken()
     if (error) {
@@ -25,23 +29,33 @@ async function logs() {
         return
     }
     if (!token) {
-        log(constants.AUTH_REQUIRED_MESSAGE)
+        log(msg.AUTH_REQUIRED_MESSAGE)
         return
     }
 
-    // Get currently linked project info.
-    const { data: project, error: currProjectError } = getCurrentProject()
-    if (currProjectError) {
-        logFailure(currProjectError)
+    // Get current project id.
+    const { data: projectId, error: currProjectIdError } = getCurrentProjectId()
+    if (currProjectIdError) {
+        logFailure(currProjectIdError)
         return
     }
-    if (!project || !project.id) {
-        log(constants.LINK_PROJECT_MESSAGE)
+    if (!projectId) {
+        log(msg.CHOOSE_PROJECT_MESSAGE)
+        return
+    }
+
+    // Stream logs from local docker instance when --local option provided.
+    const showLocalLogs = !!options.local
+    if (showLocalLogs) {
+        const { error: logsError } = await followDockerLogs(projectId)
+        if (logsError) {
+            logFailure(logsError)
+        }
         return
     }
 
     // Fetch log stream.
-    const { data: body, error: apiError } = await client.logs(project.id, token)
+    const { data: body, error: apiError } = await client.logs(projectId, token)
     if (apiError) {
         logFailure(`Error fetching project logs: ${apiError}`)
         return

@@ -1,59 +1,39 @@
-export const INIT_DATABASE = `
--- Create spec schema
+import fetch from 'cross-fetch'
+import constants from '../constants'
+import { tmpdir, createFileWithContents } from '../utils/file'
+import path from 'path'
+import { StringKeyMap } from '../types'
 
-create schema if not exists spec;
-grant usage on schema spec to spec;
+export async function fetchDbInitFile(): Promise<StringKeyMap> {
+    // Fetch remote db init file.
+    let resp
+    try {
+        resp = await fetch(constants.DB_INIT_PATH)
+    } catch (error) {
+        return { error }
+    }
+    if (resp?.status !== 200) {
+        return { error: `Failed to fetch db init file. Got status ${resp?.status}` }
+    }
 
--- Give spec user access to the "spec" schema
+    // Parse contents.
+    let body
+    try {
+        body = await resp.text()
+    } catch (err) {
+        return { error: err }
+    }
+    if (!body) {
+        return { error: `Failed to fetch db init file. Got empty response.` }
+    }
 
-grant all privileges on all tables in schema spec to spec;
-grant all privileges on all sequences in schema spec to spec;
-grant all privileges on all functions in schema spec to spec;
-alter default privileges in schema spec grant all on tables to spec;
-alter default privileges in schema spec grant all on functions to spec;
-alter default privileges in schema spec grant all on sequences to spec;
+    // Save to tmp directory.
+    const tmpPath = path.join(tmpdir(), constants.DB_INIT_TMP_FILE_NAME)
+    try {
+        createFileWithContents(tmpPath, body)
+    } catch (err) {
+        return { error: `Failed to save db init file to tmp directory: ${err}` }
+    }
 
--- Give spec user access to the "public" schema
-
-grant all privileges on all tables in schema public to spec;
-grant all privileges on all sequences in schema public to spec;
-grant all privileges on all functions in schema public to spec;
-alter default privileges in schema public grant all on tables to spec;
-alter default privileges in schema public grant all on functions to spec;
-alter default privileges in schema public grant all on sequences to spec;
-
--- spec.event_cursors definition
-
-create table if not exists spec.event_cursors (
-    name character varying not null,
-    id character varying not null,
-    nonce bigint not null,
-    "timestamp" timestamp with time zone not null,
-    constraint event_cursors_pkey primary key (name)
-);
-comment on table spec.event_cursors is 'Spec: Stores the last event seen for each subscribed event channel.';
-
-alter table spec.event_cursors owner to spec;
-
--- spec.live_columns definition
-
-create table if not exists spec.live_columns (
-    column_path character varying not null,
-    live_property character varying not null,
-    seed_status character varying not null,
-    constraint live_columns_pkey primary key (column_path)
-);
-comment on table spec.live_columns is 'Spec: Stores the current live columns.';
-
-alter table spec.live_columns owner to spec;
-
--- spec.table_sub_cursors definition
-
-create table if not exists spec.table_sub_cursors (
-    table_path character varying not null,
-    "timestamp" timestamp with time zone not null,
-    constraint table_sub_cursors_pkey primary key (table_path)
-);
-comment on table spec.table_sub_cursors is 'Spec: Stores the last table-sub event (table data-change event) seen for each live table.';
-
-alter table spec.table_sub_cursors owner to spec;`
+    return { data: tmpPath }
+}

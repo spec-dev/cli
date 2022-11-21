@@ -1,9 +1,8 @@
-import { logSuccess, logFailure, log } from '../logger'
+import { logSuccess, logFailure, logWarning, log } from '../logger'
 import { getDBConfig } from '../config/connect'
-import { getCurrentProject } from '../config/project'
-import { getProjectCreds } from '../config/global'
+import { getProjectCreds, getCurrentProjectId } from '../config/global'
 import { ensureDockerInstalled, ensureDockerRunning, runSpec, isSpecRunning } from '../utils/docker'
-import constants from '../constants'
+import msg from '../utils/msg'
 import { initDatabase } from '../db'
 
 const CMD = 'start'
@@ -16,16 +15,25 @@ function addStartCmd(program) {
  * Start Spec locally, connecting to your local Postgres database.
  */
 async function start() {
-    log('Resolving linked project...')
-
-    // Get currently linked project info.
-    const { data: project, error } = getCurrentProject()
+    // Get current project id.
+    const { data: projectId, error } = getCurrentProjectId()
     if (error) {
         logFailure(error)
         return
     }
-    if (!project || !project.id) {
-        log(constants.LINK_PROJECT_MESSAGE)
+    if (!projectId) {
+        logWarning(msg.CHOOSE_PROJECT_MESSAGE)
+        return
+    }
+
+    // Get current project credentials from global spec creds file.
+    const { data: creds, error: credsError } = getProjectCreds(projectId)
+    if (credsError) {
+        logFailure(`Error finding project credentials: ${credsError}`)
+        return
+    }
+    if (!creds?.apiKey) {
+        logWarning(msg.CHOOSE_PROJECT_MESSAGE)
         return
     }
 
@@ -35,46 +43,33 @@ async function start() {
         logFailure(getDBConfigError)
         return
     }
-    if (!dbConfig || !dbConfig.name) {
-        log(constants.POPULATE_DB_CONN_CONFIG_MESSAGE)
-        return
-    }
-
-    // Get project credentials from global spec creds file.
-    const { data: creds, error: credsError } = getProjectCreds(project.id)
-    if (credsError) {
-        logFailure(`Error finding project credentials: ${credsError}`)
-        return
-    }
-    if (!creds || !creds.apiKey) {
-        log(constants.LINK_PROJECT_MESSAGE)
+    if (!dbConfig?.name) {
+        logWarning(msg.POPULATE_DB_CONN_CONFIG_MESSAGE)
         return
     }
 
     // Ensure Docker is installed.
     const isDockerInstalled = ensureDockerInstalled()
     if (!isDockerInstalled) {
-        log(constants.INSTALL_DOCKER)
+        logWarning(msg.INSTALL_DOCKER)
         return
     }
 
     // Ensure Docker is running.
     const isDockerRunning = ensureDockerRunning()
     if (!isDockerRunning) {
-        log(constants.RUN_DOCKER)
+        logWarning(msg.RUN_DOCKER)
         return
     }
 
     // Make sure Spec isn't already running.
-    if (isSpecRunning(project.id)) {
-        log('Spec is already running.')
+    if (isSpecRunning(projectId)) {
+        logWarning('Spec is already running.\nRun "spec stop" to stop the current instance.')
         return
     }
 
-    log('Initializing database...')
-
     // Initialize database with Spec user/schema.
-    const { error: initDBError } = initDatabase(dbConfig.name)
+    const { error: initDBError } = await initDatabase(dbConfig.name)
     if (initDBError) {
         logFailure(`Error initializing database: ${initDBError}`)
         return
@@ -83,7 +78,7 @@ async function start() {
     log('Starting Spec...')
 
     // Run the Spec docker image.
-    const { error: dockerError } = runSpec(project.id, dbConfig.name, dbConfig.port, creds.apiKey)
+    const { error: dockerError } = runSpec(projectId, dbConfig.name, dbConfig.port, creds.apiKey)
     if (dockerError) {
         logFailure(`Error starting Spec docker image: ${dockerError}`)
         return

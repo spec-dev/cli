@@ -5,7 +5,7 @@ export function log(...args: any[]) {
 }
 
 export function logSuccess(...args: any[]) {
-    log(chalk.cyan(...args))
+    log(chalk.cyanBright(...args))
 }
 
 export function logFailure(...args: any[]) {

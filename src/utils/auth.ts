@@ -1,12 +1,12 @@
 import netrc from 'netrc'
-import constants from '../constants'
 import { StringKeyMap } from '../types'
+import { buildUrl } from '../api/routes'
 
 export function persistSession(email: string, token: string): StringKeyMap {
     let error = null
     try {
         const entries = netrc()
-        entries[constants.SPEC_NETRC_ENTRY] = {
+        entries[getNetrcEntryId()] = {
             login: email,
             password: token,
         }
@@ -22,9 +22,14 @@ export function getSessionToken(): StringKeyMap {
     let error = null
     try {
         const entries = netrc()
-        token = (entries[constants.SPEC_NETRC_ENTRY] || {}).password || null
+        token = (entries[getNetrcEntryId()] || {}).password || null
     } catch (err) {
         error = err?.message || err
     }
     return { token, error }
+}
+
+export function getNetrcEntryId(): string {
+    const url = new URL(buildUrl(''))
+    return url.hostname
 }

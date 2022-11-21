@@ -1,4 +1,4 @@
-import { routes } from './routes'
+import { routes, buildUrl } from './routes'
 import { get, post } from '../utils/request'
 import constants from '../constants'
 import { LinkProjectResponse, LoginResponse, StringMap } from '../types'
@@ -9,7 +9,7 @@ const formatAuthHeader = (sessionToken: string): StringMap => ({
 
 async function login(email: string, password: string): Promise<LoginResponse> {
     // Perform login request.
-    const { data, headers, error } = await post(routes.LOGIN, { email, password })
+    const { data, headers, error } = await post(buildUrl(routes.LOGIN), { email, password })
     if (error) return { error }
 
     // Get new session token from response headers.
@@ -17,14 +17,14 @@ async function login(email: string, password: string): Promise<LoginResponse> {
     return { sessionToken, message: data.message }
 }
 
-async function linkProject(
+async function getProject(
     org: string,
     project: string,
     sessionToken: string
 ): Promise<LinkProjectResponse> {
     // Perform link request.
     const { data, error } = await get(
-        routes.LINK_PROJECT,
+        buildUrl(routes.GET_PROJECT),
         { org, project },
         formatAuthHeader(sessionToken)
     )
@@ -42,7 +42,7 @@ async function linkProject(
 async function logs(projectId: string, sessionToken: string) {
     // Perform logs request.
     const { data: resp, error } = await get(
-        routes.PROJECT_LOGS,
+        buildUrl(routes.PROJECT_LOGS),
         { id: projectId },
         formatAuthHeader(sessionToken),
         true
@@ -56,11 +56,8 @@ async function logs(projectId: string, sessionToken: string) {
     return { data: resp.body }
 }
 
-async function deploy(projectId: string) {}
-
 export const client = {
     login,
-    linkProject,
+    getProject,
     logs,
-    deploy,
 }
