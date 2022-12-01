@@ -12,16 +12,11 @@ const constants: StringKeyMap = {
     // Global CLI config.
     SPEC_GLOBAL_DIR: path.join(os.homedir(), '.spec'),
     SPEC_GLOBAL_STATE_FILE_NAME: 'state.toml',
+    SPEC_GLOBAL_CREDS_FILE_NAME: 'creds.toml',
 
     // Spec API config.
-    SPEC_API_ORIGIN: ev('SPEC_API_ORIGIN'),
-    SPEC_PROD_API_0RIGIN: 'https://api.spec.dev',
-    SPEC_DEV_API_0RIGIN: 'https://api-dev.spec.dev',
+    SPEC_API_ORIGIN: ev('SPEC_API_ORIGIN', 'https://api.spec.dev'),
     USER_AUTH_HEADER_NAME: 'Spec-User-Auth-Token',
-    SPEC_PROD_EVENTS_HOSTNAME: 'events.spec.dev',
-    SPEC_DEV_EVENTS_HOSTNAME: 'events-dev.spec.dev',
-    SPEC_PROD_LOGS_HOSTNAME: 'logs.spec.dev',
-    SPEC_DEV_LOGS_HOSTNAME: 'logs-dev.spec.dev',
 
     // Default DB config.
     DB_USER: 'spec',
@@ -49,6 +44,11 @@ constants.PROJECT_CONFIG_PATH = path.join(
 constants.SPEC_GLOBAL_STATE_PATH = path.join(
     constants.SPEC_GLOBAL_DIR,
     constants.SPEC_GLOBAL_STATE_FILE_NAME
+)
+
+constants.SPEC_GLOBAL_CREDS_PATH = path.join(
+    constants.SPEC_GLOBAL_DIR,
+    constants.SPEC_GLOBAL_CREDS_FILE_NAME
 )
 
 export default constants

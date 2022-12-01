@@ -1,5 +1,5 @@
 import { repoPathToComponents } from '../../utils/formatters'
-import { log, logWarning, logFailure, logSuccess } from '../../logger'
+import { logWarning, logFailure, logSuccess } from '../../logger'
 import { client } from '../../api/client'
 import msg from '../../utils/msg'
 import { saveProjectCreds, setCurrentProjectId } from '../../config/global'

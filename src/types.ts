@@ -35,8 +35,3 @@ export enum LogLevel {
     Warn = 'warn',
     Error = 'error',
 }
-
-export enum SpecEnv {
-    Dev = 'dev',
-    Prod = 'prod',
-}

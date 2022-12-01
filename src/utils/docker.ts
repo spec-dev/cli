@@ -1,7 +1,6 @@
 import { execSync } from 'node:child_process'
-import { StringKeyMap, SpecEnv } from '../types'
+import { StringKeyMap } from '../types'
 import constants from '../constants'
-import { getCurrentEnv } from '../config/global'
 import { sleep } from './time'
  
 export function ensureDockerInstalled(): boolean {
@@ -44,10 +43,6 @@ export function stopSpec(projectId: string): StringKeyMap {
 }
 
 export function runSpec(projectId: string, dbName: string, dbPort: number, apiKey: string): StringKeyMap {
-    const { data, error } = getEnvBasedEnvVars()
-    if (error) return { error }
-    const { eventsHostname, logsHostname } = data
-
     try {
         execSync(
             `docker run -d \
@@ -56,8 +51,6 @@ export function runSpec(projectId: string, dbName: string, dbPort: number, apiKe
                 -e DB_PORT=${dbPort || constants.DB_PORT} \
                 -e DB_NAME=${dbName} \
                 -e PROJECT_API_KEY=${apiKey} \
-                -e EVENTS_HOSTNAME=${eventsHostname} \
-                -e LOGS_HOSTNAME=${logsHostname} \
                 -e STREAM_LOGS='false' \
                 -e DEBUG='true' \
                 -e FORCE_COLOR=1 \
@@ -70,24 +63,6 @@ export function runSpec(projectId: string, dbName: string, dbPort: number, apiKe
         return { error }
     }
     return { error: null }
-}
-
-export function getEnvBasedEnvVars(): StringKeyMap {
-    const { data: currentEnv, error } = getCurrentEnv()
-    if (error) return { error }
-
-    switch (currentEnv) {
-        case SpecEnv.Dev:
-            return { data: {
-                eventsHostname: constants.SPEC_DEV_EVENTS_HOSTNAME,
-                logsHostname: constants.SPEC_DEV_LOGS_HOSTNAME,
-            }}
-        default:
-            return { data: {
-                eventsHostname: constants.SPEC_PROD_EVENTS_HOSTNAME,
-                logsHostname: constants.SPEC_PROD_LOGS_HOSTNAME,
-            }}
-    }
 }
 
 export async function followDockerLogs(projectId: string): Promise<StringKeyMap> {
