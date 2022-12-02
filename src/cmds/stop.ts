@@ -30,6 +30,8 @@ async function stop() {
         return
     }
 
+    log('Stopping Spec...')
+
     // Stop container.
     const { error: stopError } = stopSpec(projectId)
     if (stopError) {

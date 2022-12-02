@@ -1,7 +1,7 @@
 {
     "name": "@spec.dev/cli",
     "description": "Spec CLI",
-    "version": "0.0.4",
+    "version": "0.0.5",
     "keywords": [
         "javascript",
         "typescript",
@@ -29,7 +29,7 @@
         "scrap": "ts-node ./src/scrap.ts",
         "clean": "rimraf dist",
         "format": "prettier --write \"{src,test}/**/*.ts\"",
-        "build": "run-s clean format build:main",
+        "build": "genversion src/version.ts --es6 && run-s clean format build:main",
         "build:main": "tsc -p tsconfig.json"
     },
     "dependencies": {
@@ -44,6 +44,7 @@
     },
     "devDependencies": {
         "@types/node": "^18.0.3",
+        "genversion": "^3.0.1",
         "npm-run-all": "^4.1.5",
         "prettier": "^2.1.2",
         "pretty-quick": "^3.1.0",

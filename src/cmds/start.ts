@@ -14,7 +14,7 @@ function addStartCmd(program) {
 /**
  * Start Spec locally, connecting to your local Postgres database.
  */
-async function start() {
+export async function start() {
     // Get current project id.
     const { data: projectId, error } = getCurrentProjectId()
     if (error) {

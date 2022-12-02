@@ -43,6 +43,7 @@ export function stopSpec(projectId: string): StringKeyMap {
 }
 
 export function runSpec(projectId: string, dbName: string, dbPort: number, apiKey: string): StringKeyMap {
+
     try {
         execSync(
             `docker run -d \
@@ -56,7 +57,7 @@ export function runSpec(projectId: string, dbName: string, dbPort: number, apiKe
                 -e FORCE_COLOR=1 \
                 -v ${constants.SPEC_CONFIG_DIR}:/usr/app/${constants.SPEC_CONFIG_DIR_NAME} \
                 --name spec-${projectId} \
-                ${constants.SPEC_DOCKER_IMAGE}:latest`,
+                ${constants.SPEC_DOCKER_IMAGE}:local-latest`,
             { stdio: 'pipe' }
         )
     } catch (error) {
