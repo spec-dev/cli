@@ -2,7 +2,7 @@ import { execSync } from 'node:child_process'
 import { StringKeyMap } from '../types'
 import constants from '../constants'
 import { sleep } from './time'
- 
+
 export function ensureDockerInstalled(): boolean {
     try {
         const out = execSync('which docker')
@@ -42,19 +42,29 @@ export function stopSpec(projectId: string): StringKeyMap {
     return { error }
 }
 
-export function runSpec(projectId: string, dbName: string, dbPort: number, apiKey: string): StringKeyMap {
+export function runSpec(
+    projectId: string, 
+    dbName: string, 
+    dbPort: number, 
+    apiKey: string,
+    envs?: StringKeyMap,
+): StringKeyMap {
+    const formattedEnvs = formatEnvs({
+        DB_USER: constants.DB_USER,
+        DB_HOST: constants.DB_HOST,
+        DB_PORT: dbPort || constants.DB_PORT,
+        DB_NAME: dbName,
+        PROJECT_API_KEY: apiKey,
+        STREAM_LOGS: 'false',
+        DEBUG: 'true',
+        FORCE_COLOR: 1,
+        ...(envs || {})
+    })
 
     try {
         execSync(
             `docker run -d \
-                -e DB_USER=${constants.DB_USER} \
-                -e DB_HOST=${constants.DB_HOST} \
-                -e DB_PORT=${dbPort || constants.DB_PORT} \
-                -e DB_NAME=${dbName} \
-                -e PROJECT_API_KEY=${apiKey} \
-                -e STREAM_LOGS='false' \
-                -e DEBUG='true' \
-                -e FORCE_COLOR=1 \
+                ${formattedEnvs} \
                 -v ${constants.SPEC_CONFIG_DIR}:/usr/app/${constants.SPEC_CONFIG_DIR_NAME} \
                 --name spec-${projectId} \
                 ${constants.SPEC_DOCKER_IMAGE}:local-latest`,
@@ -77,4 +87,12 @@ export async function followDockerLogs(projectId: string): Promise<StringKeyMap>
         return { error }
     }
     return { error: null }
+}
+
+function formatEnvs(envs: StringKeyMap): string {
+    const formattedEnvs = []
+    for (const key in envs) {
+        formattedEnvs.push(`-e ${key}=${envs[key]}`)
+    }
+    return formattedEnvs.join(' ')
 }

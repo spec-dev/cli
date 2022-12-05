@@ -2,19 +2,24 @@ import { logSuccess, logFailure, logWarning, log } from '../logger'
 import { getDBConfig } from '../config/connect'
 import { getProjectCreds, getCurrentProjectId } from '../config/global'
 import { ensureDockerInstalled, ensureDockerRunning, runSpec, isSpecRunning } from '../utils/docker'
-import msg from '../utils/msg'
 import { initDatabase } from '../db'
+import { parseEnvArg } from '../utils/env'
+import { StringKeyMap } from '../types'
+import msg from '../utils/msg'
 
 const CMD = 'start'
 
 function addStartCmd(program) {
-    program.command(CMD).action(start)
+    program
+        .command(CMD)
+        .option('-e, --env-var [envVars...]', 'Environment variable in KEY=VALUE format')
+        .action(start)
 }
 
 /**
  * Start Spec locally, connecting to your local Postgres database.
  */
-export async function start() {
+export async function start(options) {
     // Get current project id.
     const { data: projectId, error } = getCurrentProjectId()
     if (error) {
@@ -78,13 +83,32 @@ export async function start() {
     log('Starting Spec...')
 
     // Run the Spec docker image.
-    const { error: dockerError } = runSpec(projectId, dbConfig.name, dbConfig.port, creds.apiKey)
+    const { error: dockerError } = runSpec(
+        projectId,
+        dbConfig.name,
+        dbConfig.port,
+        creds.apiKey,
+        parseEnvVarOptions(options)
+    )
     if (dockerError) {
         logFailure(`Error starting Spec docker image: ${dockerError}`)
         return
     }
 
     logSuccess('Successfully started Spec.')
+}
+
+function parseEnvVarOptions(options: StringKeyMap): StringKeyMap {
+    const envVarArgs = (options.envVar || [])
+        .filter((v) => !!v)
+        .map((v) => parseEnvArg(v))
+        .filter((v) => !!v)
+
+    const envVarsMap = {}
+    for (const [name, value] of envVarArgs) {
+        envVarsMap[name] = value
+    }
+    return envVarsMap
 }
 
 export default addStartCmd

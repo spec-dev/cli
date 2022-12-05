@@ -7,13 +7,16 @@ import { start } from './start'
 const CMD = 'restart'
 
 function addRestartCmd(program) {
-    program.command(CMD).action(restart)
+    program
+        .command(CMD)
+        .option('-e, --env-var [envVars...]', 'Environment variable in KEY=VALUE format')
+        .action(restart)
 }
 
 /**
  * Restart locally running version of Spec.
  */
-async function restart() {
+async function restart(options) {
     // Get current project id.
     const { data: projectId, error } = getCurrentProjectId()
     if (error) {
@@ -35,7 +38,7 @@ async function restart() {
         }
     }
 
-    await start()
+    await start(options)
 }
 
 export default addRestartCmd
