@@ -1,0 +1,60 @@
+{
+    "name": "@spec.dev/cli",
+    "description": "Spec CLI",
+    "version": "0.0.1",
+    "keywords": [
+        "javascript",
+        "typescript",
+        "spec",
+        "cli"
+    ],
+    "homepage": "https://github.com/spec-dev/cli",
+    "bugs": "https://github.com/spec-dev/cli/issues",
+    "license": "MIT",
+    "author": "Spec",
+    "files": [
+        "dist",
+        "src"
+    ],
+    "main": "dist/main/index.js",
+    "types": "dist/main/index.d.ts",
+    "bin": {
+        "spec": "dist/index.js"
+    },
+    "sideEffects": false,
+    "repository": "spec-dev/cli",
+    "scripts": {
+        "start": "node dist/index.js",
+        "dev": "ts-node ./src/index.ts",
+        "scrap": "ts-node ./src/scrap.ts",
+        "clean": "rimraf dist",
+        "format": "prettier --write \"{src,test}/**/*.ts\"",
+        "build": "genversion src/version.ts --es6 && run-s clean format build:main",
+        "build:main": "tsc -p tsconfig.json"
+    },
+    "dependencies": {
+        "@ltd/j-toml": "1.30.0",
+        "@streamparser/json": "^0.0.8",
+        "chalk": "4.1.0",
+        "commander": "^9.4.0",
+        "netrc": "^0.1.4",
+        "node-fetch": "^2.6.6",
+        "open": "^8.4.2",
+        "parse-database-url": "^0.3.0",
+        "qoa": "^0.2.0",
+        "uuid4": "^2.0.3"
+    },
+    "devDependencies": {
+        "@types/node": "^18.0.3",
+        "genversion": "^3.0.1",
+        "npm-run-all": "^4.1.5",
+        "prettier": "^2.1.2",
+        "pretty-quick": "^3.1.0",
+        "rimraf": "^3.0.2",
+        "ts-jest": "^26.3.0",
+        "ts-loader": "^8.0.11",
+        "ts-node": "^10.8.2",
+        "typedoc": "^0.22.11",
+        "typescript": "^4.5.5"
+    }
+}
