@@ -26,3 +26,14 @@ export const capitalize = (val: string): string => {
     const firstLetter = val[0].toUpperCase()
     return `${firstLetter}${val.slice(1)}`
 }
+
+export const toNumber = (val: any): number | null => {
+    const num = parseInt(val)
+    return Number.isNaN(num) ? null : num
+}
+
+export const toDate = (val: any): Date | null => {
+    const date = new Date(val)
+    const invalid = date.toString().toLowerCase() === 'invalid date'
+    return invalid ? null : date
+}

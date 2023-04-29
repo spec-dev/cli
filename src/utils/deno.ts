@@ -4,6 +4,10 @@ import constants from '../constants'
 import path from 'path'
 import { getCurrentDbUser } from '../db'
 import process from 'process'
+import { saveState, readGlobalStateFile } from '../config/global'
+import { version } from '../version'
+
+const testLiveObjectFilePath = path.resolve(__dirname, '..', 'files', 'testLiveObject.ts')
 
 export function ensureDenoInstalled(): boolean {
     try {
@@ -15,30 +19,57 @@ export function ensureDenoInstalled(): boolean {
     }
 }
 
+export function hasCachedDenoTestFile() {
+    return readGlobalStateFile()?.version === version
+}
+
+export function cacheDenoTestFile() {
+    try {
+        execSync(`deno cache ${testLiveObjectFilePath}`, { stdio: 'inherit' })
+    } catch (error) {
+        return { error }
+    }
+    saveState({ version })
+}
+
 export async function testLiveObject(
     liveObjectFolderName: string,
-    localSharedTablesApiPort: number,
-    projectApiKey: string
+    options: StringKeyMap,
+    apiKey: string
 ): Promise<StringKeyMap> {
-    const testLiveObjectFilePath = path.resolve(__dirname, '..', 'files', 'testLiveObject.ts')
     const { data: user } = getCurrentDbUser()
     if (!user) {
         return { error: `No current DB user could be found.` }
     }
-    const localSharedTablesDbUrl = `postgres://${user}:@localhost:5432/${constants.SHARED_TABLES_DB_NAME}`
-    const cmdArgs = [
-        ['--allow-env'],
-        ['--allow-net'],
-        ['--allow-read'],
-        ['--importmap=imports.json'],
-        [testLiveObjectFilePath],
-        [liveObjectFolderName],
-        [localSharedTablesDbUrl],
-        [localSharedTablesApiPort],
-        [projectApiKey],
-    ].flat()
 
-    process.env.SHARED_TABLES_ORIGIN = `http://localhost:${localSharedTablesApiPort}`
+    hasCachedDenoTestFile() || cacheDenoTestFile()
+
+    const localSharedTablesDbUrl = `postgres://${user}:@localhost:5432/${constants.SHARED_TABLES_DB_NAME}`
+
+    const { recent, from, fromBlock, to, toBlock, chains, allTime, keepData, port } = options
+
+    const cmdArgs = [
+        '--cached-only',
+        '--allow-env',
+        '--allow-net',
+        '--allow-read',
+        '--importmap=imports.json',
+        testLiveObjectFilePath,
+        liveObjectFolderName,
+        localSharedTablesDbUrl,
+        recent ? recent.toString() : 'false',
+        from ? from.toISOString() : 'null',
+        fromBlock ? fromBlock.toString() : 'null',
+        to ? to.toISOString() : 'null',
+        toBlock ? toBlock.toString() : 'null',
+        chains ? chains.toString() : 'null',
+        allTime ? allTime.toString() : 'false',
+        keepData ? keepData.toString() : 'false',
+        port ? port.toString() : 'null',
+        apiKey ? apiKey.toString() : 'null',
+    ]
+
+    process.env.SHARED_TABLES_ORIGIN = `http://localhost:${options.port}`
 
     try {
         execSync(`deno run ${cmdArgs.join(' ')}`, { stdio: 'inherit' })

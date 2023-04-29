@@ -13,7 +13,7 @@ import {
     ColumnSpec,
     BigInt,
 } from 'https://esm.sh/@spec.dev/core@0.0.83'
-import { createEventClient, SpecEventClient } from 'https://esm.sh/@spec.dev/event-client@0.0.13'
+import { createEventClient, SpecEventClient } from 'https://esm.sh/@spec.dev/event-client@0.0.14'
 import {
     buildSelectQuery,
     buildUpsertQuery,
@@ -195,9 +195,9 @@ function stringify(value: any, ...args): string | null {
     }
 }
 
-function parse(value: any, fallback: any = {}): string | null {
+function parse(value: any, fallback: any = {}): any {
     try {
-        return JSON.stringify(value)
+        return JSON.parse(value)
     } catch (err) {
         return fallback
     }
@@ -219,6 +219,36 @@ function resp(data, code = codes.SUCCESS): Response {
         status: code,
         headers: { 'Content-Type': 'application/json' },
     })
+}
+
+function isNull(val: any): boolean {
+    return val === null || val === 'null'
+}
+
+function toNumber(val: any): number | null {
+    const num = parseInt(val)
+    return Number.isNaN(num) ? null : num
+}
+
+function parseOptions() {
+    const values = Deno.args.slice(2) || []
+    return {
+        recent: values[0] === 'true',
+        from: isNull(values[1]) ? null : values[1],
+        fromBlock: isNull(values[2]) ? null : toNumber(values[2]),
+        to: isNull(values[3]) ? null : values[3],
+        toBlock: isNull(values[4]) ? null : toNumber(values[4]),
+        chainIds: isNull(values[5])
+            ? null
+            : values[5]
+                  .split(',')
+                  .map((v) => v.trim())
+                  .filter((v) => !!v),
+        allTime: values[6] === 'true',
+        keepData: values[7] === 'true',
+        port: isNull(values[8]) ? null : toNumber(values[8]),
+        apiKey: isNull(values[9]) ? null : values[9],
+    }
 }
 
 async function getLiveObjectSpecs(): Promise<StringKeyMap[]> {
@@ -308,24 +338,13 @@ async function readTextFile(path: string): Promise<string> {
 }
 
 async function readJsonFile(path: string): Promise<StringKeyMap | StringKeyMap[]> {
-    return JSON.parse(await readTextFile(path))
+    return parse(await readTextFile(path))
 }
 
 async function readManifest(liveObjectSpecPath: string): Promise<StringKeyMap> {
     let splitSpecConfigDirPath = liveObjectSpecPath.split('/')
     splitSpecConfigDirPath.pop()
     return await readJsonFile(`${splitSpecConfigDirPath.join('/')}/${liveObjectFileNames.MANIFEST}`)
-}
-
-function getCurrentProjectApiKey() {
-    const apiKey = Deno.args[3]
-    if (!apiKey) {
-        console.log(
-            `No api key found for the current project.\n` +
-                `Try running the "spec use project <org>/<name>" command again.`
-        )
-    }
-    return apiKey
 }
 
 function createInputEventsMap(liveObjectsMap: StringKeyMap): StringKeyMap {
@@ -1256,6 +1275,8 @@ async function onTxRoute(req: Request) {
 }
 
 async function run() {
+    const options = parseOptions()
+
     // Get all Live Object specs inside the given parent folders.
     const liveObjects = await getLiveObjectSpecs()
     if (!liveObjects.length) return
@@ -1272,8 +1293,15 @@ async function run() {
         await upsertLiveObjectTable(liveObjectsMap[key].liveObjectInstance)
     }
 
-    const apiKey = getCurrentProjectApiKey()
-    if (!apiKey) return
+    // Project API key needs to exist to pull test data from the event network.
+    const apiKey = options.apiKey
+    if (!apiKey) {
+        console.log(
+            `No api key found for the current project.\n` +
+                `Try running the "spec use project <org>/<name>" command again.`
+        )
+        return
+    }
 
     // Subscribe to all input events & calls.
     if (Object.keys(inputEventsMap).length || Object.keys(inputCallsMap).length) {
@@ -1288,7 +1316,7 @@ async function run() {
             'POST@/tx': onTxRoute,
         }),
         {
-            port: Deno.args[2] || 8000,
+            port: options.port || 8000,
             onListen({ port }) {
                 console.log(`Tables API listening on port ${port}...`)
             },
