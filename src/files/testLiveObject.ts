@@ -1544,8 +1544,6 @@ async function streamTestData(
 
     console.log(`\n================================================================\n`)
 
-    console.log(chalk.underline(`Done with historical data.`))
-
     console.log(chalk.underline(chalk.green(`\nFinal inputs breakdown:`)))
     const maxInputNameLength = Math.max(
         ...Object.keys(aggregateInputsBreakdown).map((n) => n.length)
