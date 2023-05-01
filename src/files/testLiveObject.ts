@@ -50,6 +50,9 @@ const codes = {
     INTERNAL_SERVER_ERROR: 500,
 }
 
+const TEST_DATA_INITIAL_REQUEST_TIMEOUT = 30000
+const AUTH_HEADER_NAME = 'Spec-Auth-Token'
+
 const MAX_TX_ENTRIES = 10
 
 const CONTRACTS_EVENT_NSP = 'contracts'
@@ -187,6 +190,12 @@ const typeIdent = (type: string): string => {
     return type.endsWith('[]') ? `${ident(type.slice(0, -2))}[]` : ident(type)
 }
 
+const identPath = (value: string): string =>
+    value
+        .split('.')
+        .map((v) => ident(v))
+        .join('.')
+
 function stringify(value: any, ...args): string | null {
     try {
         return JSON.stringify(value, ...args)
@@ -201,6 +210,13 @@ function parse(value: any, fallback: any = {}): any {
     } catch (err) {
         return fallback
     }
+}
+
+function padToLength(val: string, len: number): string {
+    while (val.length < len) {
+        val += ' '
+    }
+    return val
 }
 
 async function getPoolConnection() {
@@ -230,9 +246,9 @@ function toNumber(val: any): number | null {
     return Number.isNaN(num) ? null : num
 }
 
-function parseOptions() {
-    const values = Deno.args.slice(2) || []
-    return {
+function parseOptions(): StringKeyMap {
+    const values = Deno.args.slice(3) || []
+    const options = {
         recent: values[0] === 'true',
         from: isNull(values[1]) ? null : values[1],
         fromBlock: isNull(values[2]) ? null : toNumber(values[2]),
@@ -249,6 +265,19 @@ function parseOptions() {
         port: isNull(values[8]) ? null : toNumber(values[8]),
         apiKey: isNull(values[9]) ? null : values[9],
     }
+
+    if (
+        !options.recent &&
+        !options.from &&
+        options.fromBlock === null &&
+        !options.to &&
+        options.toBlock === null &&
+        !options.allTime &&
+        !options.keepData
+    ) {
+        options.keepData = true
+    }
+    return options
 }
 
 async function getLiveObjectSpecs(): Promise<StringKeyMap[]> {
@@ -378,7 +407,7 @@ function createInputCallsMap(liveObjectsMap: StringKeyMap): StringKeyMap {
 function newEventClient(apiKey: string): SpecEventClient {
     return createEventClient({
         signedAuthToken: apiKey,
-        onConnect: () => console.log('Listening for input events...'),
+        onConnect: () => console.log('Listening for new input events...'),
     })
 }
 
@@ -545,6 +574,21 @@ async function getColumnsWithAttrs(schemaName: string, tableName: string): Promi
         default: row.default,
         notNull: row.nullable === 'NO',
     }))
+}
+
+async function getTableCount(tablePath: string): Promise<number> {
+    const query = {
+        sql: `select count(*) from ${identPath(tablePath)}`,
+        bindings: [],
+    }
+    let rows = []
+    try {
+        rows = await performQuery(query)
+    } catch (err) {
+        throw `Error getting table count for ${tablePath}: ${stringify(err)}`
+    }
+
+    return parseInt(rows[0]?.count)
 }
 
 async function upsertSchema(schemaName: string) {
@@ -1021,10 +1065,11 @@ async function performTableChanges(newTableSpec: TableSpec, diffs: StringKeyMap)
     }
 }
 
-async function upsertLiveObjectTable(liveObject: LiveObject) {
+async function upsertLiveObjectTable(liveObject: LiveObject): Promise<string> {
     // Get the new table spec for this Live Object.
     const newTableSpec = await liveObject.tableSpec()
     const { schemaName, tableName } = newTableSpec
+    const tablePath = [schemaName, tableName].join('.')
 
     // Force-set the primary unique constraint columns to not-null.
     const primaryUniqueColGroupSet = new Set(newTableSpec.uniqueBy[0] || [])
@@ -1045,7 +1090,7 @@ async function upsertLiveObjectTable(liveObject: LiveObject) {
     if (!(await doesTableExist(schemaName, tableName))) {
         console.log(chalk.magenta(`Creating new table "${schemaName}"."${tableName}"`))
         await createTableFromSpec(newTableSpec)
-        return
+        return tablePath
     }
 
     // Create a table spec from the current version of the table so we can
@@ -1053,6 +1098,30 @@ async function upsertLiveObjectTable(liveObject: LiveObject) {
     const currentTableSpec = await buildTableSpec(schemaName, tableName)
     const diffs = determineTableChanges(currentTableSpec, newTableSpec)
     await performTableChanges(newTableSpec, diffs)
+
+    return tablePath
+}
+
+async function clearTables(tables: string[]) {
+    const schema = tables[0].split('.')[0]
+    console.log(
+        chalk.gray(
+            `Clearing ${tables.length} table${
+                tables.length === 1 ? '' : 's'
+            } in the "${schema}" schema...`
+        )
+    )
+
+    const txStatements = tables.map((table) => ({
+        sql: `delete from ${identPath(table)}`,
+        bindings: [],
+    }))
+
+    try {
+        await performTx(txStatements)
+    } catch (err) {
+        throw `Error clearing tables ${tables.join(', ')}: ${stringify(err)}`
+    }
 }
 
 function subscribeToEventsAndCalls(
@@ -1108,7 +1177,8 @@ async function handleEventOrCall(
     eventOrCall: Event | Call,
     liveObjectName: string,
     TargetLiveObject: LiveObject,
-    handler: string
+    handler: string,
+    log: boolean = true
 ) {
     eventOrCall.origin.blockNumber = BigInt.from(eventOrCall.origin.blockNumber)
     const logPrefix = chalk.gray(`${liveObjectName} |`)
@@ -1124,15 +1194,18 @@ async function handleEventOrCall(
         }
     } catch (err) {
         console.error(`${logPrefix} Error handling ${eventOrCall.name}`, err, eventOrCall)
-        return []
+        return { name: null, count: 0 }
     }
 
     // Live object events to be published due to the logic in the handler.
     const liveObjectEvents = liveObject._publishedEvents
     const numResponseEvents = liveObjectEvents.length
     if (!numResponseEvents) {
-        console.log(`${logPrefix} No changes to publish.`)
-        return
+        log && console.log(`${logPrefix} No changes to publish.`)
+        return { name: null, count: 0 }
+    }
+    if (!log) {
+        return { name: liveObjectEvents[0]?.name, count: numResponseEvents }
     }
     console.log(
         `${logPrefix} ${chalk.cyanBright(
@@ -1274,6 +1347,257 @@ async function onTxRoute(req: Request) {
     return resp(results)
 }
 
+let hasFetched = false
+async function fetchTestData(payload: StringKeyMap, apiKey: string): Promise<StringKeyMap> {
+    const url = Deno.args[2]
+    const abortController = new AbortController()
+    const timer = setTimeout(() => abortController.abort(), TEST_DATA_INITIAL_REQUEST_TIMEOUT)
+
+    const headers = {
+        'Content-Type': 'application/json',
+        [AUTH_HEADER_NAME]: apiKey,
+    }
+
+    console.log(
+        chalk.gray(`\n- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - \n`)
+    )
+
+    if (hasFetched) {
+        console.log(`Fetching next batch @ ${chalk.magenta(payload.cursor)}`)
+    } else {
+        const at = payload.cursor || payload.from
+        console.log(`Fetching batch inputs${at ? ` @ ${chalk.magenta(at)}` : ''}`)
+        hasFetched = true
+    }
+
+    let resp, error
+    try {
+        resp = await fetch(url, {
+            method: 'POST',
+            body: stringify(payload),
+            headers,
+            signal: abortController.signal,
+        })
+    } catch (err) {
+        error = `Unexpected error fetching test data: ${stringify(err)}`
+    }
+    if (!error && resp?.status !== 200) {
+        error = `Fetching test data failed: got response code ${resp?.status}`
+    }
+    clearTimeout(timer)
+
+    let data = {}
+    try {
+        data = (await resp.json()) || {}
+    } catch (err) {
+        error = `Error parsing JSON response: ${err}`
+    }
+
+    return { data, error }
+}
+
+function buildStreamTestDataPayload(
+    inputEventsMap: StringKeyMap,
+    inputCallsMap: StringKeyMap,
+    options: StringKeyMap,
+    cursor?: string,
+    streamId?: string
+): StringKeyMap {
+    return {
+        inputs: {
+            events: Object.keys(inputEventsMap),
+            calls: Object.keys(inputCallsMap),
+        },
+        cursor: cursor || null,
+        chainIds: options.chainIds || [],
+        from: options.from,
+        fromBlock: options.fromBlock,
+        to: options.to,
+        toBlock: options.toBlock,
+        recent: options.recent,
+        allTime: options.allTime,
+        streamId,
+    }
+}
+
+async function processTestDataInputs(
+    inputs: StringKeyMap[],
+    inputEventsMap: StringKeyMap,
+    inputCallsMap: StringKeyMap,
+    liveObjectsMap: StringKeyMap
+): Promise<StringKeyMap> {
+    const inputsBreakdown = {}
+    const numInputs = inputs.length
+    if (!numInputs) return inputsBreakdown
+
+    if (numInputs) {
+        console.log(chalk.green(`\nProcessing ${numInputs} inputs:`))
+    } else {
+        console.log(`\nNo inputs this batch.`)
+        return inputsBreakdown
+    }
+
+    for (const input of inputs) {
+        inputsBreakdown[input.name] = (inputsBreakdown[input.name] || 0) + 1
+    }
+
+    const maxInputNameLength = Math.max(...Object.keys(inputsBreakdown).map((n) => n.length))
+    for (const name in inputsBreakdown) {
+        console.log(
+            `${chalk.gray('--')} ${padToLength(name, maxInputNameLength)}  ${chalk.green(
+                inputsBreakdown[name].toLocaleString()
+            )}`
+        )
+    }
+
+    let numOutputEvents = 0
+    const outputsBreakdown = {}
+    for (const input of inputs) {
+        const isCall = input?.hasOwnProperty('inputs')
+        const inputsMap = isCall ? inputCallsMap : inputEventsMap
+        const handler = isCall ? 'handleCall' : 'handleEvent'
+
+        for (const specFilePath of inputsMap[input.name] || []) {
+            const liveObject = liveObjectsMap[specFilePath]
+            if (!liveObject) continue
+            const { name: outputEventName, count } = await handleEventOrCall(
+                input,
+                liveObject.name,
+                liveObject.LiveObjectClass,
+                handler,
+                false
+            )
+            outputsBreakdown[outputEventName] = (outputsBreakdown[outputEventName] || 0) + count
+            numOutputEvents += count
+        }
+    }
+
+    numOutputEvents &&
+        console.log(
+            chalk.cyanBright(
+                `\nCurated ${numOutputEvents} output event${numOutputEvents > 1 ? 's' : ''}:`
+            )
+        )
+
+    const maxOutputNameLength = Math.max(...Object.keys(outputsBreakdown).map((n) => n.length))
+    for (const name in outputsBreakdown) {
+        console.log(
+            `${chalk.gray('--')} ${padToLength(name, maxOutputNameLength)}  ${chalk.cyanBright(
+                outputsBreakdown[name].toLocaleString()
+            )}`
+        )
+    }
+
+    return { inputsBreakdown, outputsBreakdown }
+}
+
+async function streamTestData(
+    inputEventsMap: StringKeyMap,
+    inputCallsMap: StringKeyMap,
+    liveObjectsMap: StringKeyMap,
+    liveObjectTableForName: StringKeyMap,
+    options: StringKeyMap,
+    subscribeToInputs: Function | null,
+    aggregateInputsBreakdown: StringKeyMap = {},
+    aggregateOutputsBreakdown: StringKeyMap = {},
+    cursor?: string,
+    streamId?: string
+) {
+    const { data, error } = await fetchTestData(
+        buildStreamTestDataPayload(inputEventsMap, inputCallsMap, options, cursor, streamId),
+        options.apiKey
+    )
+    if (error) {
+        console.error(chalk.red(error))
+        return
+    }
+
+    const { inputsBreakdown, outputsBreakdown } = await processTestDataInputs(
+        data.inputs || [],
+        inputEventsMap,
+        inputCallsMap,
+        liveObjectsMap
+    )
+    for (const name in inputsBreakdown) {
+        aggregateInputsBreakdown[name] =
+            (aggregateInputsBreakdown[name] || 0) + inputsBreakdown[name]
+    }
+    for (const name in outputsBreakdown) {
+        aggregateOutputsBreakdown[name] =
+            (aggregateOutputsBreakdown[name] || 0) + outputsBreakdown[name]
+    }
+
+    if (data.cursor) {
+        return streamTestData(
+            inputEventsMap,
+            inputCallsMap,
+            liveObjectsMap,
+            liveObjectTableForName,
+            options,
+            subscribeToInputs,
+            aggregateInputsBreakdown,
+            aggregateOutputsBreakdown,
+            data.cursor,
+            data.streamId
+        )
+    }
+
+    console.log(`\n================================================================\n`)
+
+    console.log(chalk.underline(`Done with historical data.`))
+
+    console.log(chalk.underline(chalk.green(`\nFinal inputs breakdown:`)))
+    const maxInputNameLength = Math.max(
+        ...Object.keys(aggregateInputsBreakdown).map((n) => n.length)
+    )
+    for (const name in aggregateInputsBreakdown) {
+        console.log(
+            `${chalk.gray('--')} ${padToLength(name, maxInputNameLength)}  ${chalk.green(
+                aggregateInputsBreakdown[name].toLocaleString()
+            )}`
+        )
+    }
+
+    console.log(chalk.underline(chalk.cyanBright(`\nFinal outputs breakdown:`)))
+    const maxOutputNameLength = Math.max(
+        ...Object.keys(aggregateOutputsBreakdown).map((n) => n.length)
+    )
+    for (const name in aggregateOutputsBreakdown) {
+        console.log(
+            `${chalk.gray('--')} ${padToLength(name, maxOutputNameLength)}  ${chalk.cyanBright(
+                aggregateOutputsBreakdown[name].toLocaleString()
+            )}`
+        )
+    }
+
+    const tableCountPromises = []
+    const liveObjectNames = []
+    for (const liveObjectName in liveObjectTableForName) {
+        liveObjectNames.push(liveObjectName)
+        const tablePath = liveObjectTableForName[liveObjectName]
+        tableCountPromises.push(getTableCount(tablePath))
+    }
+    const tableCounts = await Promise.all(tableCountPromises)
+
+    console.log(chalk.underline(chalk.magenta(`\nFinal records count:`)))
+    const maxLiveObjectNameLength = Math.max(...liveObjectNames.map((n) => n.length))
+
+    for (let i = 0; i < liveObjectNames.length; i++) {
+        const liveObjectName = liveObjectNames[i]
+        const tableCount = tableCounts[i]
+        console.log(
+            `${chalk.gray('--')} ${padToLength(
+                liveObjectName,
+                maxLiveObjectNameLength
+            )}  ${chalk.magenta(tableCount.toLocaleString())}`
+        )
+    }
+
+    console.log(`\n================================================================\n`)
+
+    subscribeToInputs && subscribeToInputs()
+}
+
 async function run() {
     const options = parseOptions()
 
@@ -1289,8 +1613,12 @@ async function run() {
     const inputCallsMap = createInputCallsMap(liveObjectsMap)
 
     // Upsert each Live Object's postgres table.
+    const tables = []
+    const liveObjectTableForName = {}
     for (const key in liveObjectsMap) {
-        await upsertLiveObjectTable(liveObjectsMap[key].liveObjectInstance)
+        const tablePath = await upsertLiveObjectTable(liveObjectsMap[key].liveObjectInstance)
+        tables.push(tablePath)
+        liveObjectTableForName[liveObjectsMap[key].name] = tablePath
     }
 
     // Project API key needs to exist to pull test data from the event network.
@@ -1304,11 +1632,16 @@ async function run() {
     }
 
     // Subscribe to all input events & calls.
+    let subscribeToInputs
     if (Object.keys(inputEventsMap).length || Object.keys(inputCallsMap).length) {
-        subscribeToEventsAndCalls(apiKey, inputEventsMap, inputCallsMap, liveObjectsMap)
+        subscribeToInputs = () =>
+            subscribeToEventsAndCalls(apiKey, inputEventsMap, inputCallsMap, liveObjectsMap)
     } else {
         console.log(chalk.yellow('No input events or calls to subscribe to.'))
     }
+
+    // Reset live table data before each test unless specified.
+    options.keepData || (await clearTables(tables))
 
     serve(
         router({
@@ -1318,7 +1651,25 @@ async function run() {
         {
             port: options.port || 8000,
             onListen({ port }) {
-                console.log(`Tables API listening on port ${port}...`)
+                console.log(`Shared Tables API listening on port ${port}...`)
+                const shouldFetchHistoricalTestData =
+                    options.from ||
+                    options.fromBlock ||
+                    options.to ||
+                    options.toBlock ||
+                    options.recent ||
+                    options.allTime
+
+                shouldFetchHistoricalTestData
+                    ? streamTestData(
+                          inputEventsMap,
+                          inputCallsMap,
+                          liveObjectsMap,
+                          liveObjectTableForName,
+                          options,
+                          subscribeToInputs
+                      )
+                    : subscribeToInputs()
             },
         }
     )
