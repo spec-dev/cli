@@ -1544,7 +1544,7 @@ async function streamTestData(
 
     console.log(`\n================================================================\n`)
 
-    console.log(chalk.underline(chalk.green(`\nFinal inputs breakdown:`)))
+    console.log(chalk.green(`Final inputs breakdown:`))
     const maxInputNameLength = Math.max(
         ...Object.keys(aggregateInputsBreakdown).map((n) => n.length)
     )
@@ -1556,7 +1556,7 @@ async function streamTestData(
         )
     }
 
-    console.log(chalk.underline(chalk.cyanBright(`\nFinal outputs breakdown:`)))
+    console.log(chalk.cyanBright(`\nFinal outputs breakdown:`))
     const maxOutputNameLength = Math.max(
         ...Object.keys(aggregateOutputsBreakdown).map((n) => n.length)
     )
@@ -1577,7 +1577,7 @@ async function streamTestData(
     }
     const tableCounts = await Promise.all(tableCountPromises)
 
-    console.log(chalk.underline(chalk.magenta(`\nFinal records count:`)))
+    console.log(chalk.magenta(`\nFinal records count:`))
     const maxLiveObjectNameLength = Math.max(...liveObjectNames.map((n) => n.length))
 
     for (let i = 0; i < liveObjectNames.length; i++) {
