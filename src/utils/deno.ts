@@ -6,6 +6,7 @@ import { getCurrentDbUser } from '../db'
 import process from 'process'
 import { saveState, readGlobalStateFile } from '../config/global'
 import { version } from '../version'
+import { log } from '../logger'
 
 const testLiveObjectFilePath = path.resolve(__dirname, '..', 'files', 'testLiveObject.ts')
 
@@ -20,10 +21,11 @@ export function ensureDenoInstalled(): boolean {
 }
 
 export function hasCachedDenoTestFile() {
-    return readGlobalStateFile()?.version === version
+    return readGlobalStateFile()?.data?.version === version
 }
 
 export function cacheDenoTestFile() {
+    log(`Caching live object test file...`)
     try {
         execSync(`deno cache ${testLiveObjectFilePath}`, { stdio: 'inherit' })
     } catch (error) {
@@ -57,6 +59,7 @@ export async function testLiveObject(
         testLiveObjectFilePath,
         liveObjectFolderName,
         localSharedTablesDbUrl,
+        constants.TEST_DATA_URL,
         recent ? recent.toString() : 'false',
         from ? from.toISOString() : 'null',
         fromBlock ? fromBlock.toString() : 'null',
