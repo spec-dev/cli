@@ -138,6 +138,10 @@ function validateOptions(options: StringKeyMap): StringKeyMap {
         logWarning(`--days can't be used when both --from and --to are also specified`)
         return { isValid: false }
     }
+    if ((fromBlock || toBlock) && (from || to) && allTime) {
+        logWarning(`Can't specify a range when using --all-time`)
+        return { isValid: false }
+    }
 
     // Only 1 chain can be specified when using block ranges.
     if ((fromBlock || toBlock) && chainIds.length > 1) {
@@ -171,8 +175,7 @@ function validateOptions(options: StringKeyMap): StringKeyMap {
         from = subtractDays(to, days)
     }
     if (!from && !to && days) {
-        to = new Date()
-        from = subtractDays(to, days)
+        from = subtractDays(new Date(new Date().toUTCString()), days)
     }
 
     const opts = {
