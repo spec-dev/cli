@@ -9,7 +9,7 @@ import path from 'path'
 export const DEFAULT_PROJECT_ENV = 'local'
 
 export function saveProjectCreds(
-    org: string,
+    nsp: string,
     name: string,
     id: string,
     apiKey: string
@@ -23,7 +23,7 @@ export function saveProjectCreds(
 
     // Upsert project section within file.
     const creds = data || {}
-    const projectPath = [org, name].join('/')
+    const projectPath = [nsp, name].join('/')
     creds[projectPath] = creds[projectPath] || Section({})
     creds[projectPath].id = id
     creds[projectPath].apiKey = apiKey
@@ -70,7 +70,7 @@ export function saveState(updates: StringKeyMap): StringKeyMap {
 }
 
 export function saveProjectInfo(
-    org: string,
+    nsp: string,
     name: string,
     id: string,
     updates: StringKeyMap
@@ -84,7 +84,7 @@ export function saveProjectInfo(
 
     // Upsert project section within file.
     const projects = data || {}
-    const projectPath = [org, name].join('/')
+    const projectPath = [nsp, name].join('/')
     projects[projectPath] = projects[projectPath] || Section({})
     projects[projectPath].id = id
     for (const key in updates || {}) {
@@ -94,8 +94,8 @@ export function saveProjectInfo(
     return saveGlobalProjectsFile(projects)
 }
 
-export function setProjectLocation(org: string, name: string, id: string, path: string) {
-    saveProjectInfo(org, name, id, { location: path })
+export function setProjectLocation(nsp: string, name: string, id: string, path: string) {
+    saveProjectInfo(nsp, name, id, { location: path })
 }
 
 export function upsertSpecGlobalDir() {

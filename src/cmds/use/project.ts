@@ -9,7 +9,7 @@ const CMD = 'project'
 
 function addProjectCmd(cmd) {
     cmd.command(CMD)
-        .argument('project', 'Spec project to use in <org-name>/<project-name> format')
+        .argument('project', 'Spec project to use in <namespace>/<project> format')
         .action(useProject)
 }
 
@@ -17,13 +17,13 @@ function addProjectCmd(cmd) {
  * Set a Spec project as the "current" project.
  */
 export async function useProject(projectPath: string, logResult: boolean = true) {
-    // Split input into org/project.
+    // Split input into namespace/project.
     const pathComps = repoPathToComponents(projectPath)
     if (!pathComps) {
-        logWarning('Please specify the project in <org-name>/<project-name> format.')
+        logWarning('Please specify the project in <namespace>/<project> format.')
         return
     }
-    const [orgName, projectName] = pathComps
+    const [nsp, projectName] = pathComps
 
     // Get authed user's session token (if any).
     const { token, error } = getSessionToken()
@@ -36,33 +36,33 @@ export async function useProject(projectPath: string, logResult: boolean = true)
         return
     }
 
-    // Resolve user's project by org/name.
+    // Resolve user's project by nsp/name.
     const {
         id,
         name,
-        org,
+        namespace,
         apiKey,
         metadata,
         error: apiError,
-    } = await client.getProject(orgName, projectName, token)
+    } = await client.getProject(nsp, projectName, token)
     if (apiError) {
         logFailure(`Failed to resolve project ${projectPath}: ${apiError}`)
         return
     }
-    if (!id || !name || !org || !apiKey) {
+    if (!id || !name || !namespace || !apiKey) {
         logFailure(
             `Failed to resolve project with ${projectPath}.\n
             Couldn't resolve all necessary project attributes:\n
             id=${id}\n
             name=${name}\n 
-            org=${org}\n
+            namespace=${namespace}\n
             apiKey=${apiKey}`
         )
         return
     }
 
     // Save project id and api key to global creds file.
-    const { error: saveCredsError } = saveProjectCreds(org, name, id, apiKey)
+    const { error: saveCredsError } = saveProjectCreds(namespace, name, id, apiKey)
     if (saveCredsError) {
         logFailure(saveCredsError)
         return
@@ -78,7 +78,7 @@ export async function useProject(projectPath: string, logResult: boolean = true)
         return
     }
 
-    logResult && logSuccess(`Switched to project: ${org}/${name}`)
+    logResult && logSuccess(`Switched to project: ${namespace}/${name}`)
     return { id, metadata }
 }
 

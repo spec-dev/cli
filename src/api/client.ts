@@ -18,14 +18,14 @@ async function login(email: string, password: string): Promise<LoginResponse> {
 }
 
 async function getProject(
-    org: string,
+    namespace: string,
     project: string,
     sessionToken: string
 ): Promise<LinkProjectResponse> {
     // Perform link request.
     const { data, error } = await get(
         buildUrl(routes.GET_PROJECT),
-        { org, project },
+        { namespace, project },
         formatAuthHeader(sessionToken)
     )
     if (error) return { error }
@@ -34,7 +34,7 @@ async function getProject(
     return {
         id: data.id || '',
         name: data.slug || '',
-        org: data.org?.slug || '',
+        namespace: data.namespace?.name || '',
         apiKey: data.apiKey,
         metadata: data.metadata || {},
     }

@@ -19,7 +19,7 @@ export interface LoginResponse {
 export interface LinkProjectResponse {
     id?: string
     name?: string
-    org?: string
+    namespace?: string
     apiKey?: string
     metadata?: StringKeyMap
     error?: string

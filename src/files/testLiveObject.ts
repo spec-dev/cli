@@ -1624,7 +1624,7 @@ async function run() {
     if (!apiKey) {
         console.log(
             `No api key found for the current project.\n` +
-                `Try running the "spec use project <org>/<name>" command again.`
+                `Try running the "spec use project <namespace>/<project>" command again.`
         )
         return
     }

@@ -12,7 +12,7 @@ const CMD = 'project'
 
 function addProjectCmd(cmd) {
     cmd.command(CMD)
-        .argument('project', 'The project to link in <org-name>/<project-name> format')
+        .argument('project', 'The project to link in <namespace>/<project> format')
         .argument('directory', 'Local path to the project (should contain a ".spec/" folder)')
         .action(linkProject)
 }
@@ -53,8 +53,8 @@ async function linkProject(projectPath: string, localPath: string) {
     }
 
     // Set the location of project in global config.
-    const [orgName, projectName] = repoPathToComponents(projectPath)
-    setProjectLocation(orgName, projectName, projectId, location)
+    const [nsp, projectName] = repoPathToComponents(projectPath)
+    setProjectLocation(nsp, projectName, projectId, location)
     logSuccess(`Set location of project "${projectPath}" to "${location}"`)
 }
 
