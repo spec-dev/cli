@@ -78,7 +78,7 @@ export function saveProjectInfo(
     // Ensure spec global config directory exists.
     upsertSpecGlobalDir()
 
-    // Get current global creds.
+    // Get global projects info.
     const { data, error } = readGlobalProjectsFile()
     if (error) return { error }
 
@@ -92,6 +92,14 @@ export function saveProjectInfo(
     }
 
     return saveGlobalProjectsFile(projects)
+}
+
+export function getProjectInfo(id: string): StringKeyMap | null {
+    const { data, error } = readGlobalProjectsFile()
+    if (error) return { error }
+    const project = Object.values(data || {}).find((p) => (p as StringKeyMap).id === id)
+    if (!project) return { data: null }
+    return { data: toMap(project) }
 }
 
 export function setProjectLocation(nsp: string, name: string, id: string, path: string) {

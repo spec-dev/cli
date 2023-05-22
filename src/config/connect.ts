@@ -40,22 +40,22 @@ export const createSpecConnectionConfigFile = (specConfigDir?: string, defaultDb
 export const specConnectionConfigFileExists = (): boolean =>
     fileExists(constants.CONNECTION_CONFIG_PATH)
 
-export function getDBConfig(): StringKeyMap {
+export function getDBConfig(projectDirPath: string, projectEnv: string): StringKeyMap {
+    const connectFilePath = path.join(
+        projectDirPath,
+        constants.SPEC_CONFIG_DIR_NAME,
+        constants.CONNECTION_CONFIG_FILE_NAME
+    )
+
     // Ensure connection config file exists.
-    if (!specConnectionConfigFileExists()) {
+    if (!fileExists(connectFilePath)) {
         return { error: null }
     }
 
-    const { data, error } = getConnectionConfig()
-    if (error) return { error }
-
-    return { data: data.local || null }
-}
-
-export function getConnectionConfig(): StringKeyMap {
+    // Return config for given environment.
     try {
-        const data = toml.parse(fs.readFileSync(constants.CONNECTION_CONFIG_PATH, 'utf-8'))
-        return { data }
+        const data = toml.parse(fs.readFileSync(connectFilePath, 'utf-8')) || {}
+        return { data: data[projectEnv] || null }
     } catch (error) {
         return { error }
     }

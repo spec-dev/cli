@@ -1,20 +1,18 @@
-import { logFailure, logWarning, log, logSuccess } from '../logger'
+import path from 'path'
+import { logFailure, logWarning } from '../logger'
 import { getDBConfig } from '../config/connect'
-import { getProjectCreds, getCurrentProjectId } from '../config/global'
 import {
-    ensureDockerInstalled,
-    ensureDockerComposeInstalled,
-    ensureDockerRunning,
-    startSpec,
-} from '../utils/docker'
+    getProjectCreds,
+    getCurrentProjectId,
+    getCurrentProjectEnv,
+    getProjectInfo,
+} from '../config/global'
 import { initDatabase, psqlInstalled } from '../db'
-import { specClientInstalled } from '../utils/client'
+import { specClientInstalled, startSpec } from '../utils/client'
 import msg from '../utils/msg'
-import open from 'open'
 import constants from '../constants'
-import { installCustomPackages } from '../config/custom'
-import { newPassword } from '../utils/pw'
 import parsePostgresUrl from 'parse-database-url'
+import { fileExists } from '../utils/file'
 
 const CMD = 'start'
 
@@ -29,7 +27,7 @@ function addStartCmd(program) {
  * Start Spec locally, connecting to your local Postgres database.
  */
 export async function start(options) {
-    // Get current project id.
+    // Get the current project id.
     const { data: projectId, error } = getCurrentProjectId()
     if (error) {
         logFailure(error)
@@ -40,7 +38,35 @@ export async function start(options) {
         return
     }
 
-    // Get current project credentials from global spec creds file.
+    // Get the current project env (local, staging, prod, etc).
+    const { data: projectEnv, error: getEnvError } = getCurrentProjectEnv()
+    if (getEnvError) {
+        logFailure(error)
+        return
+    }
+    if (!projectEnv) {
+        logWarning(msg.NO_CURRENT_ENV_MESSAGE)
+        return
+    }
+
+    // Get the location of the project (/path/to/project)
+    const { data: projectInfo, error: getProjectError } = getProjectInfo(projectId)
+    if (getProjectError) {
+        logFailure(error)
+        return
+    }
+    const { location: projectDirPath } = projectInfo || {}
+    if (!projectDirPath) {
+        logWarning(msg.NO_PROJECT_LOCATION)
+        return
+    }
+    const specConfigDir = path.join(projectDirPath, constants.SPEC_CONFIG_DIR_NAME)
+    if (!fileExists(specConfigDir)) {
+        logWarning(`Spec config directory doesn't exist at ${specConfigDir}.`)
+        return
+    }
+
+    // Get the current project credentials from the global creds file.
     const { data: creds, error: credsError } = getProjectCreds(projectId)
     if (credsError) {
         logFailure(`Error finding project credentials: ${credsError}`)
@@ -52,7 +78,7 @@ export async function start(options) {
     }
 
     // Get DB info from connection config file.
-    let { data: dbConfig, error: getDBConfigError } = getDBConfig()
+    let { data: dbConfig, error: getDBConfigError } = getDBConfig(projectDirPath, projectEnv)
     if (getDBConfigError) {
         logFailure(getDBConfigError)
         return
@@ -72,27 +98,6 @@ export async function start(options) {
         return
     }
 
-    // Ensure Docker is installed.
-    const isDockerInstalled = ensureDockerInstalled()
-    if (!isDockerInstalled) {
-        logWarning(msg.INSTALL_DOCKER)
-        return
-    }
-
-    // Ensure docker-compose is installed.
-    const isDockerComposeInstalled = ensureDockerComposeInstalled()
-    if (!isDockerComposeInstalled) {
-        logWarning(msg.INSTALL_DOCKER_COMPOSE)
-        return
-    }
-
-    // Ensure Docker is running.
-    const isDockerRunning = ensureDockerRunning()
-    if (!isDockerRunning) {
-        logWarning(msg.RUN_DOCKER)
-        return
-    }
-
     // Ensure psql is installed.
     if (!psqlInstalled()) {
         logWarning(msg.INSTALL_PSQL)
@@ -105,20 +110,7 @@ export async function start(options) {
         return
     }
 
-    // // Make sure Spec isn't already running.
-    // if (isSpecRunning(projectId)) {
-    //     logWarning('Spec is already running.\nRun "spec stop" to spin everything down.')
-    //     return
-    // }
-
-    // Install any custom modules (handlers, hooks, transforms).
-    const { error: customPkgInstallationError } = installCustomPackages()
-    if (customPkgInstallationError) {
-        logFailure(customPkgInstallationError)
-        return
-    }
-
-    // Initialize database with Spec user/schema.
+    // Initialize database for usage with Spec.
     const { newlyAssignedPassword, error: initDBError } = await initDatabase(
         dbConfig.name,
         options.url
@@ -127,23 +119,16 @@ export async function start(options) {
         logFailure(`Error initializing database: ${initDBError}`)
         return
     }
-
-    // Start all components of Spec.
-    const { error: startError } = await startSpec(
-        projectId,
-        creds.apiKey,
-        dbConfig,
-        newlyAssignedPassword || null
-    )
-    if (startError) {
-        logFailure(`Error starting Spec: ${startError}`)
-        return
+    if (newlyAssignedPassword) {
+        dbConfig.user = constants.SPEC_DB_USER
+        dbConfig.password = newlyAssignedPassword
     }
 
-    // Open the Spec dashboard.
-    open(constants.SPEC_DASHBOARD_URL)
-
-    logSuccess(`Successfully started Spec.`)
+    // Run the Spec client.
+    const { error: startError } = await startSpec(projectId, specConfigDir, creds.apiKey, dbConfig)
+    if (startError) {
+        logFailure(`Error starting Spec: ${startError}`)
+    }
 }
 
 export default addStartCmd

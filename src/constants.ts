@@ -23,8 +23,7 @@ const constants: StringKeyMap = {
     USER_AUTH_HEADER_NAME: 'Spec-User-Auth-Token',
 
     // Default DB config.
-    SPEC_CLIENT_DB_USER: 'spec',
-    APP_API_DB_USER: 'postgres',
+    SPEC_DB_USER: 'spec',
     DB_PORT: 5432,
 
     // Local shared tables.
