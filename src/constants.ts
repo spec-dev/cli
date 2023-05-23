@@ -26,16 +26,11 @@ const constants: StringKeyMap = {
     SPEC_DB_USER: 'spec',
     DB_PORT: 5432,
 
-    // Local shared tables.
+    // Local shared tables API (for live object testing).
     SHARED_TABLES_DB_NAME: 'shared-tables',
     LOCAL_SHARED_TABLES_API_PORT: 8000,
 
-    // Docker image.
-    SPEC_DOCKER_IMAGE: 'specdev/spec',
-    INTERNAL_DOCKER_HOST: 'host.docker.internal',
-
-    // Local dashboard url
-    SPEC_DASHBOARD_URL: 'http://localhost:54321',
+    // Desktop app name.
     SPEC_APP_NAME: 'Spec',
 }
 
