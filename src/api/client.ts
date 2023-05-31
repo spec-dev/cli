@@ -62,8 +62,52 @@ async function logs(projectId: string, sessionToken: string, env?: string) {
     return { data: resp.body }
 }
 
+async function registerContract(
+    sessionToken: string,
+    nsp: string,
+    chainId: string,
+    address: string,
+    contractName: string,
+    contractDesc: string,
+    abi: string
+) {
+    try {
+        await post(
+            buildUrl(routes.REGISTER_CONTRACT),
+            {
+                nsp,
+                chainId,
+                contracts: [
+                    {
+                        name: contractName,
+                        desc: contractDesc,
+                        instances: [
+                            {
+                                address,
+                                name: contractName,
+                                desc: '',
+                                abi,
+                            },
+                        ],
+                    },
+                ],
+            },
+            formatAuthHeader(sessionToken)
+        )
+    } catch (error) {
+        return { error }
+    }
+    // TODO:
+    // poll for delayed job completion (registerContractInstances.ts)
+    // while (!(await get('/jobComplete'))) {
+    // }
+    // "abi succefylly registered"
+    return { error: null }
+}
+
 export const client = {
     login,
     getProject,
     logs,
+    registerContract,
 }
