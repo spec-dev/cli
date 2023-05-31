@@ -1,6 +1,7 @@
 import { routes, buildUrl } from './routes'
 import { get, post } from '../utils/request'
 import constants from '../constants'
+import { log, logSuccess } from '../logger'
 import { LinkProjectResponse, LoginResponse, StringMap } from '../types'
 
 const formatAuthHeader = (sessionToken: string): StringMap => ({
@@ -71,38 +72,55 @@ async function registerContract(
     contractDesc: string,
     abi: string
 ) {
-    try {
-        await post(
-            buildUrl(routes.REGISTER_CONTRACT),
-            {
-                nsp,
-                chainId,
-                contracts: [
-                    {
-                        name: contractName,
-                        desc: contractDesc,
-                        instances: [
-                            {
-                                address,
-                                name: contractName,
-                                desc: '',
-                                abi,
-                            },
-                        ],
-                    },
-                ],
-            },
+    const { data, error: registerContractError } = await post(
+        buildUrl(routes.REGISTER_CONTRACT),
+        {
+            nsp,
+            chainId,
+            contracts: [
+                {
+                    name: contractName,
+                    desc: contractDesc,
+                    instances: [
+                        {
+                            address,
+                            name: contractName,
+                            desc: '',
+                            abi,
+                        },
+                    ],
+                },
+            ]
+        },
+        formatAuthHeader(sessionToken)
+    )
+    if (registerContractError) return { registerContractError }
+    const { uid } = data
+
+    let status
+    do {
+        const { data, error } = await post(
+            buildUrl(routes.REGISTER_CONTRACT_PROGRESS),
+            { uid },
             formatAuthHeader(sessionToken)
         )
-    } catch (error) {
-        return { error }
-    }
-    // TODO:
-    // poll for delayed job completion (registerContractInstances.ts)
-    // while (!(await get('/jobComplete'))) {
-    // }
-    // "abi succefylly registered"
+        if (error) return { error }
+        const { status: curStatus, cursor, failed, error: registerContractProgressError } = data
+        status = curStatus
+        log(`Current status: ${status} ${cursor}`)
+        if (status !== 'complete') {
+            await sleep(1000)
+        }
+    } while (status !== 'complete')
+    logSuccess('Contract registered successfully')
+
     return { error: null }
+}
+
+function sleep(ms) {
+    return new Promise((resolve) => {
+        setTimeout(resolve, ms)
+    })
 }
 
 export const client = {

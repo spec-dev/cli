@@ -70,6 +70,7 @@ export async function registerContract(
 }
 
 function readABIFromPath(abi: string): string {
+    if (!abi) return null
     if (isValidPath(abi)) {
         // code to support hardhat/truffle artifacts
         if (abi.includes('artifacts')) {
@@ -78,12 +79,13 @@ function readABIFromPath(abi: string): string {
         }
         return fs.readFileSync(path.resolve(abi), 'utf8')
     }
+    // if the abi arg isn't a valid path, we treat the argument as a raw abi string:
     return abi
 }
 
 function validateOptions(options: StringKeyMap) {
     // handle abi
-    if (!isValidABI(options.abi)) {
+    if (options.abi && !isValidABI(options.abi)) {
         logFailure('Invalid ABI')
         return { isValid: false }
     }
