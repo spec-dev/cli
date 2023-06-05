@@ -71,20 +71,12 @@ async function getABI(
         buildUrl(routes.GET_ABI),
         { id: `${chainId}:${address}` },
         formatAuthHeader(sessionToken),
-        true
+        false
     )
     if (error) return { error }
 
-    if (!resp?.body?.abi) {
-        return { error: `No ABI found for ${address} on chain ${chainId}.` }
-    }
-
-    if (resp?.status !== 200) {
-        return { error: `Request failed with status ${resp?.status}.` }
-    }
-
     // format ABI when returned
-    return { abi: JSON.stringify(resp.body.abi, null, 4) }
+    return { abi: JSON.stringify(resp.abi, null, 4) }
 }
 
 export const client = {

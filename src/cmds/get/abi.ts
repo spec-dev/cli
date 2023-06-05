@@ -11,7 +11,7 @@ const CMD = 'abi'
 function addGetABICmd(cmd) {
     cmd.command(CMD)
         .argument('address', 'Address of the contract to get the ABI for.')
-        .requiredOption('--chain <chain>', 'Chain id of target blockchain')
+        .option('--chain <chain>', 'Chain id of target blockchain', null)
         .action(getABI)
 }
 
@@ -24,9 +24,6 @@ async function getABI(
         chain: string
     }
 ) {
-    const { isValid } = validateOptions(address, opts.chain)
-    if (!isValid) return
-
     // Get authed user's session token (if any).
     const { token: sessionToken, error } = getSessionToken()
     if (error) {
@@ -37,6 +34,14 @@ async function getABI(
         log(msg.AUTH_REQUIRED_MESSAGE)
         return
     }
+
+    if (address.includes(':') && !opts.chain) {
+        opts.chain = address.split(':')[0]
+        address = address.split(':')[1]
+    }
+
+    const { isValid } = validateOptions(address, opts.chain)
+    if (!isValid) return
 
     const { error: getABIError, abi } = await client.getABI(sessionToken, opts.chain, address)
     if (getABIError) {
