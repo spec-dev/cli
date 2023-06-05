@@ -1,7 +1,7 @@
 import { routes, buildUrl } from './routes'
 import { get, post } from '../utils/request'
 import constants from '../constants'
-import { LinkProjectResponse, LoginResponse, StringMap } from '../types'
+import { LinkProjectResponse, LoginResponse, StringMap, GetABIResponse } from '../types'
 
 const formatAuthHeader = (sessionToken: string): StringMap => ({
     [constants.USER_AUTH_HEADER_NAME]: sessionToken,
@@ -62,8 +62,34 @@ async function logs(projectId: string, sessionToken: string, env?: string) {
     return { data: resp.body }
 }
 
+async function getABI(
+    sessionToken: string,
+    chainId: string,
+    address: string
+): Promise<GetABIResponse> {
+    const { data: resp, error } = await get(
+        buildUrl(routes.GET_ABI),
+        { id: `${chainId}:${address}` },
+        formatAuthHeader(sessionToken),
+        true
+    )
+    if (error) return { error }
+
+    if (!resp?.body?.abi) {
+        return { error: `No ABI found for ${address} on chain ${chainId}.` }
+    }
+
+    if (resp?.status !== 200) {
+        return { error: `Request failed with status ${resp?.status}.` }
+    }
+
+    // format ABI when returned
+    return { abi: JSON.stringify(resp.body.abi, null, 4) }
+}
+
 export const client = {
     login,
     getProject,
     logs,
+    getABI,
 }

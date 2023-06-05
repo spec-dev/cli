@@ -25,6 +25,12 @@ export interface LinkProjectResponse {
     error?: string
 }
 
+export interface GetABIResponse {
+    abi?: string
+    error?: string
+    message?: string
+}
+
 export interface Log {
     message: string
     level: LogLevel

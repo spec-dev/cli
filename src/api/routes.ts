@@ -12,6 +12,7 @@ export const routes = {
     GET_PROJECT: [prefix.PROJECT, 'with-key'].join('/'),
     CREATE_DEPLOYMENT: [prefix.DEPLOYMENT].join('/'),
     PROJECT_LOGS: [prefix.PROJECT, 'logs'].join('/'),
+    GET_ABI: 'abi',
 }
 
 export const buildUrl = (route: string) => {
