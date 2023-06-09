@@ -41,7 +41,7 @@ async function testObject(name, opts) {
     // Ensure Deno is installed.
     const isDenoInstalled = ensureDenoInstalled()
     if (!isDenoInstalled) {
-        logWarning(msg.INSTALL_DOCKER)
+        logWarning(msg.INSTALL_DENO)
         return
     }
 
