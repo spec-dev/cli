@@ -50,7 +50,13 @@ const codes = {
     INTERNAL_SERVER_ERROR: 500,
 }
 
-const TEST_DATA_INITIAL_REQUEST_TIMEOUT = 30000
+const routes = {
+    GENERATE_TEST_INPUTS: 'live-object-version/generate-test-inputs',
+    RESOLVE_EVENT_VERSIONS: 'event-versions/resolve',
+    RESOLVE_CALL_VERSIONS: 'call-versions/resolve',
+}
+
+const REQUEST_TIMEOUT = 30000
 const AUTH_HEADER_NAME = 'Spec-Auth-Token'
 
 const MAX_TX_ENTRIES = 10
@@ -325,19 +331,32 @@ async function getLiveObjectsInGivenPath(folder: string, liveObjects: StringKeyM
     }
 }
 
-async function buildLiveObjectsMap(liveObjects: StringKeyMap[]): Promise<StringKeyMap> {
+async function buildLiveObjectsMap(
+    liveObjects: StringKeyMap[],
+    apiKey: string
+): Promise<StringKeyMap> {
     const liveObjectsMap = {}
     for (const { name, specFilePath } of liveObjects) {
         const LiveObjectClass = await importLiveObject(specFilePath)
         const liveObjectInstance = new LiveObjectClass()
-        const inputEventNames = await resolveInputEventsForLiveObject(
-            liveObjectInstance,
-            specFilePath
+        const chainNsps = await getLiveObjectChainNamespaces(specFilePath)
+
+        const inputEventNames = await resolveInputsForLiveObject(
+            liveObjectInstance._eventHandlers,
+            chainNsps,
+            routes.RESOLVE_EVENT_VERSIONS,
+            'event',
+            apiKey
         )
-        const inputCallNames = await resolveInputCallsForLiveObject(
-            liveObjectInstance,
-            specFilePath
+
+        const inputCallNames = await resolveInputsForLiveObject(
+            liveObjectInstance._callHandlers,
+            chainNsps,
+            routes.RESOLVE_CALL_VERSIONS,
+            'contract function call',
+            apiKey
         )
+
         liveObjectsMap[specFilePath] = {
             name,
             specFilePath,
@@ -474,85 +493,98 @@ function buildQueryFromPayload(payload: StringKeyMap): QueryPayload | null {
     return null
 }
 
-async function getLiveObjectChainNamespaces(specFilePath: string) {
+async function getLiveObjectChainNamespaces(specFilePath: string): Promise<string[]> {
     const { chains } = (await readManifest(specFilePath)) || {}
     return chains.map((id) => nspForChainId[id]).filter((v) => !!v)
 }
 
-async function resolveInputEventsForLiveObject(
-    liveObject: LiveObject,
-    specFilePath: string
-): Promise<string[]> {
-    const registeredHandlers = liveObject._eventHandlers || {}
-    const chainNsps = await getLiveObjectChainNamespaces(specFilePath)
-    const inputEventNames = []
-    for (const givenEventName in registeredHandlers) {
-        // Add default version if it doesn't exist.
-        let resolvedEventName = givenEventName
-        if (!resolvedEventName.includes('@')) {
-            resolvedEventName += '@0.0.1'
-        }
+async function resolveInputsForLiveObject(
+    registeredHandlers: StringKeyMap,
+    chainNsps: string[],
+    route: string,
+    subject: string,
+    apiKey: string
+): Promise<string[] | null> {
+    const inputNames = []
+    for (const givenName in registeredHandlers) {
+        let fullName = givenName
 
         // Add a missing "contracts." prefix if missing.
-        if (givenEventName.split('.').length === 3) {
-            // nsp.ContractName.EventName
-            resolvedEventName = `${CONTRACTS_EVENT_NSP}.${resolvedEventName}`
+        if (givenName.split('.').length === 3) {
+            fullName = `${CONTRACTS_EVENT_NSP}.${fullName}`
         }
 
-        // Subscribe to contract event on all chains the live object
-        // is associated with if chain not specified.
-        if (resolvedEventName.startsWith(`${CONTRACTS_EVENT_NSP}.`)) {
+        // Subscribe to inputs on all chains the live object
+        // is associated with if chain is not specified.
+        if (fullName.startsWith(`${CONTRACTS_EVENT_NSP}.`)) {
             for (const nsp of chainNsps) {
-                inputEventNames.push([nsp, resolvedEventName].join('.'))
+                inputNames.push([nsp, fullName].join('.'))
             }
         } else {
-            inputEventNames.push(resolvedEventName)
+            inputNames.push(fullName)
         }
     }
-    return inputEventNames
+
+    const { data: inputVersionsMap, error } = await resolveInputVersions(inputNames, route, apiKey)
+    if (error) {
+        console.error(chalk.yellow(error))
+        return null
+    }
+
+    for (const fullName of inputNames) {
+        if (!inputVersionsMap[fullName]) {
+            console.error(
+                chalk.yellow(`No registered ${subject} on Spec was found for "${fullName}"`)
+            )
+            return null
+        }
+    }
+
+    return Object.values(inputVersionsMap)
 }
 
-async function resolveInputCallsForLiveObject(
-    liveObject: LiveObject,
-    specFilePath: string
-): Promise<string[]> {
-    const registeredHandlers = liveObject._callHandlers || {}
-    const chainNsps = await getLiveObjectChainNamespaces(specFilePath)
+async function resolveInputVersions(
+    inputs: string[],
+    route: string,
+    apiKey: string
+): Promise<StringKeyMap> {
+    const origin = Deno.args[2]
+    const url = path.join(origin, route)
 
-    const inputCalls = []
-    for (const callName in registeredHandlers) {
-        const splitCallName = callName.split('.')
-        let next = false
+    const abortController = new AbortController()
+    const timer = setTimeout(() => abortController.abort(), REQUEST_TIMEOUT)
 
-        for (const chainNsp of chainNsps) {
-            const chainContractsNsp = [chainNsp, CONTRACTS_EVENT_NSP].join('.')
-
-            if (callName.startsWith(`${chainContractsNsp}.`)) {
-                inputCalls.push(callName)
-                next = true
-                break
-            }
-
-            if (callName.startsWith(`${chainNsp}.`)) {
-                inputCalls.push(
-                    [chainNsp, CONTRACTS_EVENT_NSP, ...splitCallName.slice(1)].join('.')
-                )
-                next = true
-                break
-            }
-        }
-        if (next) continue
-
-        // Subscribe to contract call on all chains if chain not specified.
-        for (const chainNsp of chainNsps) {
-            const chainSpecificCallName =
-                splitCallName[0] === CONTRACTS_EVENT_NSP
-                    ? [chainNsp, callName].join('.')
-                    : [chainNsp, CONTRACTS_EVENT_NSP, callName].join('.')
-            inputCalls.push(chainSpecificCallName)
-        }
+    const headers = {
+        'Content-Type': 'application/json',
+        [AUTH_HEADER_NAME]: apiKey,
     }
-    return inputCalls
+
+    let resp, error
+    try {
+        resp = await fetch(url, {
+            method: 'POST',
+            body: stringify({ inputs }),
+            headers,
+            signal: abortController.signal,
+        })
+    } catch (err) {
+        error = `Unexpected error resolving input versions ${inputs.join(', ')}: ${stringify(err)}`
+    }
+    clearTimeout(timer)
+    if (error) return { error }
+
+    let data: any = {}
+    try {
+        data = (await resp.json()) || {}
+    } catch (err) {
+        error = `Error parsing JSON response: ${err}`
+    }
+
+    if (!error && data?.error) {
+        error = data.error
+    }
+
+    return { data, error }
 }
 
 async function getColumnsWithAttrs(schemaName: string, tableName: string): Promise<ColumnSpec[]> {
@@ -1349,9 +1381,10 @@ async function onTxRoute(req: Request) {
 
 let hasFetched = false
 async function fetchTestData(payload: StringKeyMap, apiKey: string): Promise<StringKeyMap> {
-    const url = Deno.args[2]
+    const origin = Deno.args[2]
+    const url = path.join(origin, routes.GENERATE_TEST_INPUTS)
     const abortController = new AbortController()
-    const timer = setTimeout(() => abortController.abort(), TEST_DATA_INITIAL_REQUEST_TIMEOUT)
+    const timer = setTimeout(() => abortController.abort(), REQUEST_TIMEOUT)
 
     const headers = {
         'Content-Type': 'application/json',
@@ -1604,7 +1637,7 @@ async function run() {
     if (!liveObjects.length) return
 
     // Import Live Objects and map them by path.
-    const liveObjectsMap = await buildLiveObjectsMap(liveObjects)
+    const liveObjectsMap = await buildLiveObjectsMap(liveObjects, options.apiKey)
 
     // Map all input events & calls to the Live Objects that depend on them.
     const inputEventsMap = createInputEventsMap(liveObjectsMap)
