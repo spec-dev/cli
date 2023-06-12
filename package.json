@@ -1,7 +1,7 @@
 {
     "name": "@spec.dev/cli",
     "description": "Spec CLI",
-    "version": "0.1.6",
+    "version": "0.1.7",
     "keywords": [
         "javascript",
         "typescript",
@@ -35,12 +35,15 @@
     "dependencies": {
         "@ltd/j-toml": "1.30.0",
         "@streamparser/json": "^0.0.8",
+        "ansi-diff-stream": "^1.2.1",
         "chalk": "4.1.0",
         "commander": "^9.4.0",
         "netrc": "^0.1.4",
         "node-fetch": "^2.6.6",
         "open": "^8.4.2",
+        "ora": "5.4.1",
         "parse-database-url": "^0.3.0",
+        "progress-string": "^1.2.2",
         "qoa": "^0.2.0",
         "uuid4": "^2.0.3"
     },
