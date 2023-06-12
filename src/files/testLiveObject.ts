@@ -12,8 +12,8 @@ import {
     TableSpec,
     ColumnSpec,
     BigInt,
-} from 'https://esm.sh/@spec.dev/core@0.0.83'
-import { createEventClient, SpecEventClient } from 'https://esm.sh/@spec.dev/event-client@0.0.14'
+} from 'https://esm.sh/@spec.dev/core@0.0.84'
+import { createEventClient, SpecEventClient } from 'https://esm.sh/@spec.dev/event-client@0.0.16'
 import {
     buildSelectQuery,
     buildUpsertQuery,
