@@ -1,10 +1,10 @@
-import addContractCmd from './contract'
+import addContractsCmd from './contracts'
 
 const CMD = 'register'
 
 function addRegisterCmd(program) {
     const register = program.command(CMD)
-    addContractCmd(register)
+    addContractsCmd(register)
 }
 
 export default addRegisterCmd

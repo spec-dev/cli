@@ -1,8 +1,13 @@
 import { routes, buildUrl } from './routes'
 import { get, post } from '../utils/request'
 import constants from '../constants'
-import { log, logSuccess } from '../logger'
-import { LinkProjectResponse, LoginResponse, StringMap } from '../types'
+import {
+    LinkProjectResponse,
+    LoginResponse,
+    RegisterContractsResponse,
+    GetContractRegistrationJobResponse,
+    StringMap,
+} from '../types'
 
 const formatAuthHeader = (sessionToken: string): StringMap => ({
     [constants.USER_AUTH_HEADER_NAME]: sessionToken,
@@ -63,69 +68,44 @@ async function logs(projectId: string, sessionToken: string, env?: string) {
     return { data: resp.body }
 }
 
-async function registerContract(
+async function registerContracts(
     sessionToken: string,
-    nsp: string,
     chainId: string,
-    address: string,
-    contractName: string,
-    contractDesc: string,
+    nsp: string,
+    name: string,
+    addresses: string[],
     abi: string
-) {
-    const { data, error: registerContractError } = await post(
-        buildUrl(routes.REGISTER_CONTRACT),
+): Promise<RegisterContractsResponse> {
+    const { data, error } = await post(
+        buildUrl(routes.REGISTER_CONTRACTS),
         {
-            nsp,
             chainId,
-            contracts: [
-                {
-                    name: contractName,
-                    desc: contractDesc,
-                    instances: [
-                        {
-                            address,
-                            name: contractName,
-                            desc: '',
-                            abi,
-                        },
-                    ],
-                },
-            ]
+            nsp,
+            name,
+            instances: addresses.map((address) => ({ address })),
+            abi,
         },
         formatAuthHeader(sessionToken)
     )
-    if (registerContractError) return { registerContractError }
-    const { uid } = data
-
-    let status
-    do {
-        const { data, error } = await post(
-            buildUrl(routes.REGISTER_CONTRACT_PROGRESS),
-            { uid },
-            formatAuthHeader(sessionToken)
-        )
-        if (error) return { error }
-        const { status: curStatus, cursor, failed, error: registerContractProgressError } = data
-        status = curStatus
-        log(`Current status: ${status} ${cursor}`)
-        if (status !== 'complete') {
-            await sleep(1000)
-        }
-    } while (status !== 'complete')
-    logSuccess('Contract registered successfully')
-
-    return { error: null }
+    return error ? { error } : data
 }
 
-function sleep(ms) {
-    return new Promise((resolve) => {
-        setTimeout(resolve, ms)
-    })
+async function getContractRegistrationJob(
+    sessionToken: string,
+    uid: string
+): Promise<GetContractRegistrationJobResponse> {
+    const { data, error } = await get(
+        buildUrl(routes.GET_CONTRACT_REGISTRATION_JOB),
+        { uid },
+        formatAuthHeader(sessionToken)
+    )
+    return error ? { error } : data
 }
 
 export const client = {
     login,
     getProject,
     logs,
-    registerContract,
+    registerContracts,
+    getContractRegistrationJob,
 }
