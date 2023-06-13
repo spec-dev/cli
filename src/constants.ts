@@ -59,9 +59,5 @@ constants.SPEC_GLOBAL_COMPOSE_DIR = path.join(constants.SPEC_GLOBAL_DIR, 'compos
 constants.SPEC_MIGRATIONS_DIR = path.join(constants.SPEC_CONFIG_DIR, constants.MIGRATIONS_DIR_NAME)
 constants.SPEC_HANDLERS_DIR = path.join(constants.SPEC_CONFIG_DIR, constants.HANDLERS_DIR_NAME)
 constants.SPEC_HOOKS_DIR = path.join(constants.SPEC_CONFIG_DIR, constants.HOOKS_DIR_NAME)
-constants.TEST_DATA_URL = path.join(
-    constants.SPEC_API_ORIGIN,
-    '/live-object-version/generate-test-inputs'
-)
 
 export default constants

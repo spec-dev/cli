@@ -25,6 +25,32 @@ export interface LinkProjectResponse {
     error?: string
 }
 
+export interface RegisterContractsResponse {
+    uid?: string
+    error?: string
+}
+
+export interface GetContractRegistrationJobResponse {
+    uid?: string
+    nsp?: string
+    contractName?: string
+    addresses?: string[]
+    chainId?: string
+    status?: ContractRegistrationJobStatus
+    cursors?: StringKeyMap
+    failed?: boolean
+    error?: string
+    createdAt?: string
+    updatedAt?: string
+}
+
+export enum ContractRegistrationJobStatus {
+    Created = 'created',
+    Decoding = 'decoding',
+    Indexing = 'indexing',
+    Complete = 'complete',
+}
+
 export interface Log {
     message: string
     level: LogLevel

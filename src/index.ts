@@ -13,6 +13,7 @@ import addOpenCmd from './cmds/open'
 import addStartCmd from './cmds/start'
 import addUpdateCmd from './cmds/update'
 import addVersionCmd from './cmds/version'
+import addRegisterCmd from './cmds/register'
 
 addDBCmd(program)
 addLinkCmd(program)
@@ -27,5 +28,6 @@ addOpenCmd(program)
 addStartCmd(program)
 addUpdateCmd(program)
 addVersionCmd(program)
+addRegisterCmd(program)
 
 program.parse()
