@@ -12,7 +12,7 @@ import {
     TableSpec,
     ColumnSpec,
     BigInt,
-} from 'https://esm.sh/@spec.dev/core@0.0.84'
+} from 'https://esm.sh/@spec.dev/core@0.0.85'
 import { createEventClient, SpecEventClient } from 'https://esm.sh/@spec.dev/event-client@0.0.16'
 import {
     buildSelectQuery,
@@ -1503,17 +1503,20 @@ async function processTestDataInputs(
                 handler,
                 false
             )
-            outputsBreakdown[outputEventName] = (outputsBreakdown[outputEventName] || 0) + count
+            if (outputEventName) {
+                outputsBreakdown[outputEventName] = (outputsBreakdown[outputEventName] || 0) + count
+            }
             numOutputEvents += count
         }
     }
 
-    numOutputEvents &&
-        console.log(
-            chalk.cyanBright(
-                `\nCurated ${numOutputEvents} output event${numOutputEvents > 1 ? 's' : ''}:`
-            )
+    console.log(
+        chalk.cyanBright(
+            numOutputEvents === 0
+                ? `\nNo output events curated.`
+                : `\nCurated ${numOutputEvents} output event${numOutputEvents === 1 ? '' : 's'}:`
         )
+    )
 
     const maxOutputNameLength = Math.max(...Object.keys(outputsBreakdown).map((n) => n.length))
     for (const name in outputsBreakdown) {
