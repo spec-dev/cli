@@ -334,7 +334,7 @@ async function getLiveObjectsInGivenPath(folder: string, liveObjects: StringKeyM
 async function buildLiveObjectsMap(
     liveObjects: StringKeyMap[],
     apiKey: string
-): Promise<StringKeyMap> {
+): Promise<StringKeyMap | null> {
     const liveObjectsMap = {}
     for (const { name, specFilePath } of liveObjects) {
         const LiveObjectClass = await importLiveObject(specFilePath)
@@ -348,6 +348,7 @@ async function buildLiveObjectsMap(
             'event',
             apiKey
         )
+        if (inputEventNames === null) return null
 
         const inputCallNames = await resolveInputsForLiveObject(
             liveObjectInstance._callHandlers,
@@ -356,6 +357,7 @@ async function buildLiveObjectsMap(
             'contract function call',
             apiKey
         )
+        if (inputCallNames === null) return null
 
         liveObjectsMap[specFilePath] = {
             name,
@@ -524,6 +526,7 @@ async function resolveInputsForLiveObject(
             inputNames.push(fullName)
         }
     }
+    if (!inputNames.length) return []
 
     const { data: inputVersionsMap, error } = await resolveInputVersions(inputNames, route, apiKey)
     if (error) {
@@ -1638,6 +1641,7 @@ async function run() {
 
     // Import Live Objects and map them by path.
     const liveObjectsMap = await buildLiveObjectsMap(liveObjects, options.apiKey)
+    if (liveObjectsMap === null) return
 
     // Map all input events & calls to the Live Objects that depend on them.
     const inputEventsMap = createInputEventsMap(liveObjectsMap)
