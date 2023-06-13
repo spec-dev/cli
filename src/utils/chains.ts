@@ -7,4 +7,11 @@ export const chainIds: StringMap = {
     MUMBAI: '80001',
 }
 
+export const chainNameForId = {
+    [chainIds.ETHEREUM]: 'ethereum',
+    [chainIds.GOERLI]: 'goerli',
+    [chainIds.POLYGON]: 'polygon',
+    [chainIds.MUMBAI]: 'mumbai',
+}
+
 export const chainIdsSet = new Set(Object.values(chainIds))

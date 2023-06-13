@@ -5,7 +5,7 @@ import msg from '../../utils/msg'
 import { log, logFailure, logSuccess } from '../../logger'
 import { StringKeyMap, ContractRegistrationJobStatus } from '../../types'
 import { getSessionToken } from '../../utils/auth'
-import { chainIdsSet } from '../../utils/chains'
+import { chainIdsSet, chainNameForId } from '../../utils/chains'
 import { sleep } from '../../utils/time'
 import { isValidAddress, isValidContractGroup, isValidPath } from '../../utils/validators'
 import progress from 'progress-string'
@@ -109,12 +109,12 @@ async function pollForRegistrationResult(
         })
     }
 
-    let numContractsEnglish = `${contractAddresses.length} contract`
+    let contractsEnglish = 'contract'
     if (contractAddresses.length > 1) {
-        numContractsEnglish += 's'
+        contractsEnglish += 's'
     }
 
-    const spinnerText = `Registering ${numContractsEnglish}`
+    const spinnerText = `Registering ${contractAddresses.length} ${contractsEnglish}`
     const diff = differ()
 
     const logProgress = (cursors: StringKeyMap, done?: boolean) => {
@@ -141,6 +141,7 @@ async function pollForRegistrationResult(
     while (true) {
         const {
             status,
+            chainId,
             cursors = {},
             failed,
             error,
@@ -156,7 +157,7 @@ async function pollForRegistrationResult(
         // Decoding contracts.
         if (status === ContractRegistrationJobStatus.Decoding) {
             logProgress(cursors)
-            spinner.text = `Decoding ${numContractsEnglish}`
+            spinner.text = `Decoding ${contractAddresses.length} ${contractsEnglish}`
         }
 
         // Job complete.
@@ -166,7 +167,9 @@ async function pollForRegistrationResult(
         if (isComplete) {
             logProgress(cursors, true)
             spinner.stop()
-            logSuccess(`Added ${numContractsEnglish} to "${group}"`)
+            logSuccess(
+                `Added ${contractAddresses.length} ${chainNameForId[chainId]} ${contractsEnglish} to group "${group}".`
+            )
             return
         }
 
