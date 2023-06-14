@@ -65,11 +65,11 @@ async function logs(projectId: string, sessionToken: string, env?: string) {
 async function getABI(
     sessionToken: string,
     chainId: string,
-    address: string
+    group: string
 ): Promise<GetABIResponse> {
     const { data: resp, error } = await get(
         buildUrl(routes.GET_ABI),
-        { id: `${chainId}:${address}` },
+        { id: `${chainId}:${group}` },
         formatAuthHeader(sessionToken),
         false
     )
