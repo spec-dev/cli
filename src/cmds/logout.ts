@@ -1,6 +1,6 @@
 import netrc from 'netrc'
-import { logSuccess, logFailure } from '../logger'
-import { getNetrcEntryId, getSessionToken } from '../utils/auth'
+import { logSuccess } from '../logger'
+import { getNetrcEntryId } from '../utils/auth'
 
 const CMD = 'logout'
 
