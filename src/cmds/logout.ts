@@ -12,12 +12,6 @@ function addLogoutCmd(program) {
  * Logout of Spec.
  */
 async function logout() {
-    const { token, error } = getSessionToken()
-    if (!token || error) {
-        logFailure('You can not logout because you are not logged in.')
-        return
-    }
-
     const entries = netrc()
     delete entries[getNetrcEntryId()]
     netrc.save(entries)
