@@ -1,6 +1,7 @@
 import netrc from 'netrc'
-import { logFailure, logSuccess } from '../../logger'
+import { logFailure, log, logSuccess } from '../../logger'
 import { getNetrcEntryId, getSessionToken } from '../../utils/auth'
+import msg from '../../utils/msg'
 
 const CMD = 'user'
 
@@ -13,8 +14,12 @@ function addUserCmd(cmd) {
  */
 async function showUser() {
     const { token, error } = getSessionToken()
-    if (!token || error) {
-        logFailure('No current user is set. Try running "spec login".')
+    if (error) {
+        logFailure(error)
+        return
+    }
+    if (!token) {
+        log(msg.AUTH_REQUIRED_MESSAGE)
         return
     }
 
