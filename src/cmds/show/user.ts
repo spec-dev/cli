@@ -14,7 +14,7 @@ function addUserCmd(cmd) {
 async function showUser() {
     const { token, error } = getSessionToken()
     if (!token || error) {
-        logFailure('No current user is set. Try running "spec login"')
+        logFailure('No current user is set. Try running "spec login".')
         return
     }
 
