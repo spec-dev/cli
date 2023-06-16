@@ -1,4 +1,4 @@
-import { logFailure, log } from '../logger'
+import { logFailure, log, logWarning } from '../logger'
 import { client } from '../api/client'
 import msg from '../utils/msg'
 import { Log, LogLevel } from '../types'
@@ -8,6 +8,7 @@ import { JSONParser } from '@streamparser/json'
 import { followLocalLogs } from '../utils/client'
 import chalk from 'chalk'
 import { exit } from 'process'
+import constants from '../constants'
 
 const CMD = 'logs'
 
@@ -16,6 +17,7 @@ function addLogsCmd(program) {
         .command(CMD)
         .option('--local', 'Display logs for the locally running Spec instance')
         .option('--env <type>', 'Filter logs by Spec environment')
+        .option('--tail <number>', 'Lines of historical logs to show', constants.DEFAULT_LOG_TAIL_SIZE)
         .action(logs)
 }
 
@@ -45,9 +47,16 @@ async function logs(options) {
         return
     }
 
+    // Get log tail size.
+    const tail = parseInt(options.tail, 10)
+    if (isNaN(tail) || tail < 0) {
+        logWarning(`--tail must be a number >= 0`)
+        return
+    }
+
     // Stream logs from local spec instance if --local option provided.
     if (!!options.local || options.env === 'local') {
-        const { error: logsError } = await followLocalLogs(projectId)
+        const { error: logsError } = await followLocalLogs(projectId, tail)
         if (logsError) {
             logFailure(logsError)
         }
@@ -55,7 +64,7 @@ async function logs(options) {
     }
 
     // Fetch log stream.
-    const { data: body, error: apiError } = await client.logs(projectId, token, options.env)
+    const { data: body, error: apiError } = await client.logs(projectId, token, tail, options.env)
     if (apiError) {
         logFailure(`Error fetching project logs: ${apiError}`)
         return

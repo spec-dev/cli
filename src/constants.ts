@@ -32,6 +32,9 @@ const constants: StringKeyMap = {
 
     // Desktop app name.
     SPEC_APP_NAME: 'Spec',
+
+    // Default log size.
+    DEFAULT_LOG_TAIL_SIZE: 20,
 }
 
 constants.SPEC_CONFIG_DIR = path.join(process.cwd(), constants.SPEC_CONFIG_DIR_NAME)
