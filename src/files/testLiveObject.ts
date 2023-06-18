@@ -4,7 +4,7 @@ import { router } from 'https://crux.land/router@0.0.5'
 import chalk from 'https://deno.land/x/chalk_deno@v4.1.1-deno/source/index.js'
 import { Pool } from 'https://deno.land/x/postgres@v0.14.0/mod.ts'
 import {
-    PublishEventQueue,
+    Queue,
     StringKeyMap,
     Event,
     Call,
@@ -12,7 +12,7 @@ import {
     TableSpec,
     ColumnSpec,
     BigInt,
-} from 'https://esm.sh/@spec.dev/core@0.0.85'
+} from 'https://esm.sh/@spec.dev/core@0.0.87'
 import { createEventClient, SpecEventClient } from 'https://esm.sh/@spec.dev/event-client@0.0.16'
 import {
     buildSelectQuery,
@@ -1181,7 +1181,7 @@ function subscribeToEventsAndCalls(
             for (const specFilePath of inputEventsMap[event.name] || []) {
                 const liveObject = liveObjectsMap[specFilePath]
                 if (!liveObject) continue
-                handleEventOrCall(event, liveObject.name, liveObject.LiveObjectClass, 'handleEvent')
+                handleInput(event, liveObject.name, liveObject.LiveObjectClass, 'handleEvent')
             }
         })
         console.log(chalk.green(`Subscribed to event ${eventName}`))
@@ -1201,46 +1201,69 @@ function subscribeToEventsAndCalls(
             for (const specFilePath of inputCallsMap[call.name] || []) {
                 const liveObject = liveObjectsMap[specFilePath]
                 if (!liveObject) continue
-                handleEventOrCall(call, liveObject.name, liveObject.LiveObjectClass, 'handleCall')
+                handleInput(call, liveObject.name, liveObject.LiveObjectClass, 'handleCall')
             }
         })
         console.log(chalk.green(`Subscribed to call ${callName}`))
     }
 }
 
-async function handleEventOrCall(
-    eventOrCall: Event | Call,
+async function handleInput(
+    input: Event | Call,
     liveObjectName: string,
     TargetLiveObject: LiveObject,
     handler: string,
     log: boolean = true
 ) {
-    eventOrCall.origin.blockNumber = BigInt.from(eventOrCall.origin.blockNumber)
+    input.origin.blockNumber = BigInt.from(input.origin.blockNumber)
     const logPrefix = chalk.gray(`${liveObjectName} |`)
 
-    // Create the Live Object with an event queue instance to capture published events.
-    const publishedEventQueue = new PublishEventQueue()
-    const liveObject = new TargetLiveObject(publishedEventQueue)
+    // Create the Live Object with queues to capture
+    // published events and any newly registered contracts.
+    const publishedEventQueue = new Queue()
+    const contractRegistrationQueue = new Queue()
+    const liveObject = new TargetLiveObject(publishedEventQueue, contractRegistrationQueue)
 
     // Handle the event or call and auto-save.
     try {
-        if (await liveObject[handler](eventOrCall)) {
+        if (await liveObject[handler](input)) {
             await liveObject.save()
         }
     } catch (err) {
-        console.error(`${logPrefix} Error handling ${eventOrCall.name}`, err, eventOrCall)
-        return { name: null, count: 0 }
+        console.error(`${logPrefix} Error handling ${input.name}`, err, input)
+        return { name: null, count: 0, registeredContracts: [] }
+    }
+
+    // New contracts to register to certain groups via a factory pattern.
+    const registeredContracts = liveObject._newContractInstances || []
+    const logNewContractResults = () => {
+        if (!log || !registeredContracts.length) return
+        console.log(
+            `\n${logPrefix} ${chalk.yellowBright(
+                `${registeredContracts.length} new contract${
+                    registeredContracts.length > 1 ? 's' : ''
+                } registered:`
+            )}`
+        )
+        registeredContracts.map(({ address, group, chainId }) => {
+            console.log(
+                `${chalk.gray('--')} ${address} ${chalk.gray('|')} ${chalk.yellowBright(
+                    group
+                )} ${chalk.gray('|')} ${chainId}`
+            )
+        })
     }
 
     // Live object events to be published due to the logic in the handler.
-    const liveObjectEvents = liveObject._publishedEvents
+    const liveObjectEvents = liveObject._publishedEvents || []
     const numResponseEvents = liveObjectEvents.length
     if (!numResponseEvents) {
         log && console.log(`${logPrefix} No changes to publish.`)
-        return { name: null, count: 0 }
+        logNewContractResults()
+        return { name: null, count: 0, registeredContracts }
     }
     if (!log) {
-        return { name: liveObjectEvents[0]?.name, count: numResponseEvents }
+        return { name: liveObjectEvents[0]?.name, count: numResponseEvents, registeredContracts }
     }
     console.log(
         `${logPrefix} ${chalk.cyanBright(
@@ -1248,6 +1271,7 @@ async function handleEventOrCall(
         )}`
     )
     console.log(numResponseEvents > 1 ? liveObjectEvents : liveObjectEvents[0])
+    logNewContractResults()
 }
 
 function mapColumnNamesToPgResult(result): StringKeyMap[] {
@@ -1487,6 +1511,7 @@ async function processTestDataInputs(
     }
 
     let numOutputEvents = 0
+    const newContracts = []
     const outputsBreakdown = {}
     for (const input of inputs) {
         const isCall = input?.hasOwnProperty('inputs')
@@ -1496,7 +1521,11 @@ async function processTestDataInputs(
         for (const specFilePath of inputsMap[input.name] || []) {
             const liveObject = liveObjectsMap[specFilePath]
             if (!liveObject) continue
-            const { name: outputEventName, count } = await handleEventOrCall(
+            const {
+                name: outputEventName,
+                count,
+                registeredContracts,
+            } = await handleInput(
                 input,
                 liveObject.name,
                 liveObject.LiveObjectClass,
@@ -1507,6 +1536,7 @@ async function processTestDataInputs(
                 outputsBreakdown[outputEventName] = (outputsBreakdown[outputEventName] || 0) + count
             }
             numOutputEvents += count
+            newContracts.push(...registeredContracts)
         }
     }
 
@@ -1525,6 +1555,23 @@ async function processTestDataInputs(
                 outputsBreakdown[name].toLocaleString()
             )}`
         )
+    }
+
+    if (newContracts.length) {
+        console.log(
+            chalk.yellowBright(
+                `\nRegistered ${newContracts.length} new contract${
+                    newContracts.length === 1 ? '' : 's'
+                }:`
+            )
+        )
+        newContracts.forEach(({ address, group, chainId }) => {
+            console.log(
+                `${chalk.gray('--')} ${address} ${chalk.gray('|')} ${chalk.yellowBright(
+                    group
+                )} ${chalk.gray('|')} ${chainId}`
+            )
+        })
     }
 
     return { inputsBreakdown, outputsBreakdown }
@@ -1664,7 +1711,7 @@ async function run() {
     if (!apiKey) {
         console.log(
             `No api key found for the current project.\n` +
-                `Try running the "spec use project <namespace>/<project>" command again.`
+                `Try running the "spec use project <namespace>/<project>" command.`
         )
         return
     }
