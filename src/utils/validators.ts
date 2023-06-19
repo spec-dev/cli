@@ -1,7 +1,6 @@
 import fs from 'fs'
 import path from 'path'
 
-
 export const toDate = (val: any): Date | null => {
     const date = new Date(val)
     const invalid = date.toString().toLowerCase() === 'invalid date'

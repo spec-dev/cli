@@ -29,7 +29,6 @@ export interface GetABIResponse {
     abi?: string
     error?: string
     message?: string
-
 }
 export interface RegisterContractsResponse {
     uid?: string
