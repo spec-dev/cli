@@ -9,7 +9,7 @@ const CMD = 'abi'
 
 function addGetABICmd(cmd) {
     cmd.command(CMD)
-        .argument('group', 'Address of the contract to get the ABI for.')
+        .argument('group', 'Contract group to get the ABI for')
         .option('--chain <chain>', 'Chain id of target blockchain', null)
         .action(getABI)
 }
@@ -44,16 +44,10 @@ async function getABI(
         return
     }
 
-    logSuccess(abi)
+    log(abi)
 }
 
 function validateOptions(group: string, chain: string) {
-    // const addressLowerCase = address.toLowerCase()
-    // if (!isValidAddress(addressLowerCase)) {
-    //     logFailure(`Invalid address: ${address}`)
-    //     return { isValid: false }
-    // }
-    // handle chain id
     if (!chainIdsSet.has(chain)) {
         logFailure(`Invalid chain id ${chain}`)
         return { isValid: false }

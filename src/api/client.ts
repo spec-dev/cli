@@ -76,7 +76,7 @@ async function getABI(
 ): Promise<GetABIResponse> {
     const { data: resp, error } = await get(
         buildUrl(routes.GET_ABI),
-        { id: `${chainId}:${group}` },
+        { chainId, group },
         formatAuthHeader(sessionToken),
         false
     )
