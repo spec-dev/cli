@@ -10,7 +10,7 @@ const CMD = 'abi'
 function addGetABICmd(cmd) {
     cmd.command(CMD)
         .argument('group', 'Contract group to get the ABI for')
-        .option('--chain <chain>', 'Chain id of target blockchain', null)
+        .requiredOption('--chain <chain>', 'Chain id of target blockchain')
         .action(getABI)
 }
 
