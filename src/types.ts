@@ -25,6 +25,11 @@ export interface LinkProjectResponse {
     error?: string
 }
 
+export interface GetABIResponse {
+    abi?: string
+    error?: string
+    message?: string
+}
 export interface RegisterContractsResponse {
     uid?: string
     error?: string

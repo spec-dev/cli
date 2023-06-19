@@ -6,6 +6,7 @@ import {
     LoginResponse,
     RegisterContractsResponse,
     GetContractRegistrationJobResponse,
+    GetABIResponse,
     StringMap,
 } from '../types'
 
@@ -68,6 +69,23 @@ async function logs(projectId: string, sessionToken: string, env?: string) {
     return { data: resp.body }
 }
 
+async function getABI(
+    sessionToken: string,
+    chainId: string,
+    group: string
+): Promise<GetABIResponse> {
+    const { data: resp, error } = await get(
+        buildUrl(routes.GET_ABI),
+        { chainId, group },
+        formatAuthHeader(sessionToken),
+        false
+    )
+    if (error) return { error }
+
+    // format ABI when returned
+    return { abi: JSON.stringify(resp.abi, null, 4) }
+}
+
 async function registerContracts(
     sessionToken: string,
     chainId: string,
@@ -106,6 +124,7 @@ export const client = {
     login,
     getProject,
     logs,
+    getABI,
     registerContracts,
     getContractRegistrationJob,
 }

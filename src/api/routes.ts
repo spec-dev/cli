@@ -14,6 +14,7 @@ export const routes = {
     GET_PROJECT: [prefix.PROJECT, 'with-key'].join('/'),
     CREATE_DEPLOYMENT: [prefix.DEPLOYMENT].join('/'),
     PROJECT_LOGS: [prefix.PROJECT, 'logs'].join('/'),
+    GET_ABI: 'abi',
     REGISTER_CONTRACTS: [prefix.CONTRACT_INSTANCES, 'register'].join('/'),
     GET_CONTRACT_REGISTRATION_JOB: prefix.CONTRACT_REGISTRATION_JOB,
 }
