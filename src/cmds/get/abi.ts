@@ -1,8 +1,7 @@
 import { getSessionToken } from '../../utils/auth'
-import { log, logFailure, logSuccess } from '../../logger'
+import { log, logFailure } from '../../logger'
 import msg from '../../utils/msg'
 import { client } from '../../api/client'
-import { isValidAddress } from '../../utils/validators'
 import { chainIdsSet } from '../../utils/chains'
 
 const CMD = 'abi'
