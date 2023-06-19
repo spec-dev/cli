@@ -1,7 +1,14 @@
 import { routes, buildUrl } from './routes'
 import { get, post } from '../utils/request'
 import constants from '../constants'
-import { LinkProjectResponse, LoginResponse, StringMap, GetABIResponse } from '../types'
+import {
+    LinkProjectResponse,
+    LoginResponse,
+    RegisterContractsResponse,
+    GetContractRegistrationJobResponse,
+    GetABIResponse,
+    StringMap,
+} from '../types'
 
 const formatAuthHeader = (sessionToken: string): StringMap => ({
     [constants.USER_AUTH_HEADER_NAME]: sessionToken,
@@ -79,9 +86,45 @@ async function getABI(
     return { abi: JSON.stringify(resp.abi, null, 4) }
 }
 
+async function registerContracts(
+    sessionToken: string,
+    chainId: string,
+    nsp: string,
+    name: string,
+    addresses: string[],
+    abi: string
+): Promise<RegisterContractsResponse> {
+    const { data, error } = await post(
+        buildUrl(routes.REGISTER_CONTRACTS),
+        {
+            chainId,
+            nsp,
+            name,
+            instances: addresses.map((address) => ({ address })),
+            abi,
+        },
+        formatAuthHeader(sessionToken)
+    )
+    return error ? { error } : data
+}
+
+async function getContractRegistrationJob(
+    sessionToken: string,
+    uid: string
+): Promise<GetContractRegistrationJobResponse> {
+    const { data, error } = await get(
+        buildUrl(routes.GET_CONTRACT_REGISTRATION_JOB),
+        { uid },
+        formatAuthHeader(sessionToken)
+    )
+    return error ? { error } : data
+}
+
 export const client = {
     login,
     getProject,
     logs,
     getABI,
+    registerContracts,
+    getContractRegistrationJob,
 }

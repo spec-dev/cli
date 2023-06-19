@@ -4,7 +4,7 @@ import { router } from 'https://crux.land/router@0.0.5'
 import chalk from 'https://deno.land/x/chalk_deno@v4.1.1-deno/source/index.js'
 import { Pool } from 'https://deno.land/x/postgres@v0.14.0/mod.ts'
 import {
-    PublishEventQueue,
+    Queue,
     StringKeyMap,
     Event,
     Call,
@@ -12,8 +12,8 @@ import {
     TableSpec,
     ColumnSpec,
     BigInt,
-} from 'https://esm.sh/@spec.dev/core@0.0.83'
-import { createEventClient, SpecEventClient } from 'https://esm.sh/@spec.dev/event-client@0.0.14'
+} from 'https://esm.sh/@spec.dev/core@0.0.87'
+import { createEventClient, SpecEventClient } from 'https://esm.sh/@spec.dev/event-client@0.0.16'
 import {
     buildSelectQuery,
     buildUpsertQuery,
@@ -50,7 +50,13 @@ const codes = {
     INTERNAL_SERVER_ERROR: 500,
 }
 
-const TEST_DATA_INITIAL_REQUEST_TIMEOUT = 30000
+const routes = {
+    GENERATE_TEST_INPUTS: 'live-object-version/generate-test-inputs',
+    RESOLVE_EVENT_VERSIONS: 'event-versions/resolve',
+    RESOLVE_CALL_VERSIONS: 'call-versions/resolve',
+}
+
+const REQUEST_TIMEOUT = 30000
 const AUTH_HEADER_NAME = 'Spec-Auth-Token'
 
 const MAX_TX_ENTRIES = 10
@@ -325,19 +331,34 @@ async function getLiveObjectsInGivenPath(folder: string, liveObjects: StringKeyM
     }
 }
 
-async function buildLiveObjectsMap(liveObjects: StringKeyMap[]): Promise<StringKeyMap> {
+async function buildLiveObjectsMap(
+    liveObjects: StringKeyMap[],
+    apiKey: string
+): Promise<StringKeyMap | null> {
     const liveObjectsMap = {}
     for (const { name, specFilePath } of liveObjects) {
         const LiveObjectClass = await importLiveObject(specFilePath)
         const liveObjectInstance = new LiveObjectClass()
-        const inputEventNames = await resolveInputEventsForLiveObject(
-            liveObjectInstance,
-            specFilePath
+        const chainNsps = await getLiveObjectChainNamespaces(specFilePath)
+
+        const inputEventNames = await resolveInputsForLiveObject(
+            liveObjectInstance._eventHandlers,
+            chainNsps,
+            routes.RESOLVE_EVENT_VERSIONS,
+            'event',
+            apiKey
         )
-        const inputCallNames = await resolveInputCallsForLiveObject(
-            liveObjectInstance,
-            specFilePath
+        if (inputEventNames === null) return null
+
+        const inputCallNames = await resolveInputsForLiveObject(
+            liveObjectInstance._callHandlers,
+            chainNsps,
+            routes.RESOLVE_CALL_VERSIONS,
+            'contract function call',
+            apiKey
         )
+        if (inputCallNames === null) return null
+
         liveObjectsMap[specFilePath] = {
             name,
             specFilePath,
@@ -474,85 +495,99 @@ function buildQueryFromPayload(payload: StringKeyMap): QueryPayload | null {
     return null
 }
 
-async function getLiveObjectChainNamespaces(specFilePath: string) {
+async function getLiveObjectChainNamespaces(specFilePath: string): Promise<string[]> {
     const { chains } = (await readManifest(specFilePath)) || {}
     return chains.map((id) => nspForChainId[id]).filter((v) => !!v)
 }
 
-async function resolveInputEventsForLiveObject(
-    liveObject: LiveObject,
-    specFilePath: string
-): Promise<string[]> {
-    const registeredHandlers = liveObject._eventHandlers || {}
-    const chainNsps = await getLiveObjectChainNamespaces(specFilePath)
-    const inputEventNames = []
-    for (const givenEventName in registeredHandlers) {
-        // Add default version if it doesn't exist.
-        let resolvedEventName = givenEventName
-        if (!resolvedEventName.includes('@')) {
-            resolvedEventName += '@0.0.1'
-        }
+async function resolveInputsForLiveObject(
+    registeredHandlers: StringKeyMap,
+    chainNsps: string[],
+    route: string,
+    subject: string,
+    apiKey: string
+): Promise<string[] | null> {
+    const inputNames = []
+    for (const givenName in registeredHandlers) {
+        let fullName = givenName
 
         // Add a missing "contracts." prefix if missing.
-        if (givenEventName.split('.').length === 3) {
-            // nsp.ContractName.EventName
-            resolvedEventName = `${CONTRACTS_EVENT_NSP}.${resolvedEventName}`
+        if (givenName.split('.').length === 3) {
+            fullName = `${CONTRACTS_EVENT_NSP}.${fullName}`
         }
 
-        // Subscribe to contract event on all chains the live object
-        // is associated with if chain not specified.
-        if (resolvedEventName.startsWith(`${CONTRACTS_EVENT_NSP}.`)) {
+        // Subscribe to inputs on all chains the live object
+        // is associated with if chain is not specified.
+        if (fullName.startsWith(`${CONTRACTS_EVENT_NSP}.`)) {
             for (const nsp of chainNsps) {
-                inputEventNames.push([nsp, resolvedEventName].join('.'))
+                inputNames.push([nsp, fullName].join('.'))
             }
         } else {
-            inputEventNames.push(resolvedEventName)
+            inputNames.push(fullName)
         }
     }
-    return inputEventNames
+    if (!inputNames.length) return []
+
+    const { data: inputVersionsMap, error } = await resolveInputVersions(inputNames, route, apiKey)
+    if (error) {
+        console.error(chalk.yellow(error))
+        return null
+    }
+
+    for (const fullName of inputNames) {
+        if (!inputVersionsMap[fullName]) {
+            console.error(
+                chalk.yellow(`No registered ${subject} on Spec was found for "${fullName}"`)
+            )
+            return null
+        }
+    }
+
+    return Object.values(inputVersionsMap)
 }
 
-async function resolveInputCallsForLiveObject(
-    liveObject: LiveObject,
-    specFilePath: string
-): Promise<string[]> {
-    const registeredHandlers = liveObject._callHandlers || {}
-    const chainNsps = await getLiveObjectChainNamespaces(specFilePath)
+async function resolveInputVersions(
+    inputs: string[],
+    route: string,
+    apiKey: string
+): Promise<StringKeyMap> {
+    const origin = Deno.args[2]
+    const url = path.join(origin, route)
 
-    const inputCalls = []
-    for (const callName in registeredHandlers) {
-        const splitCallName = callName.split('.')
-        let next = false
+    const abortController = new AbortController()
+    const timer = setTimeout(() => abortController.abort(), REQUEST_TIMEOUT)
 
-        for (const chainNsp of chainNsps) {
-            const chainContractsNsp = [chainNsp, CONTRACTS_EVENT_NSP].join('.')
-
-            if (callName.startsWith(`${chainContractsNsp}.`)) {
-                inputCalls.push(callName)
-                next = true
-                break
-            }
-
-            if (callName.startsWith(`${chainNsp}.`)) {
-                inputCalls.push(
-                    [chainNsp, CONTRACTS_EVENT_NSP, ...splitCallName.slice(1)].join('.')
-                )
-                next = true
-                break
-            }
-        }
-        if (next) continue
-
-        // Subscribe to contract call on all chains if chain not specified.
-        for (const chainNsp of chainNsps) {
-            const chainSpecificCallName =
-                splitCallName[0] === CONTRACTS_EVENT_NSP
-                    ? [chainNsp, callName].join('.')
-                    : [chainNsp, CONTRACTS_EVENT_NSP, callName].join('.')
-            inputCalls.push(chainSpecificCallName)
-        }
+    const headers = {
+        'Content-Type': 'application/json',
+        [AUTH_HEADER_NAME]: apiKey,
     }
-    return inputCalls
+
+    let resp, error
+    try {
+        resp = await fetch(url, {
+            method: 'POST',
+            body: stringify({ inputs }),
+            headers,
+            signal: abortController.signal,
+        })
+    } catch (err) {
+        error = `Unexpected error resolving input versions ${inputs.join(', ')}: ${stringify(err)}`
+    }
+    clearTimeout(timer)
+    if (error) return { error }
+
+    let data: any = {}
+    try {
+        data = (await resp.json()) || {}
+    } catch (err) {
+        error = `Error parsing JSON response: ${err}`
+    }
+
+    if (!error && data?.error) {
+        error = data.error
+    }
+
+    return { data, error }
 }
 
 async function getColumnsWithAttrs(schemaName: string, tableName: string): Promise<ColumnSpec[]> {
@@ -1146,7 +1181,7 @@ function subscribeToEventsAndCalls(
             for (const specFilePath of inputEventsMap[event.name] || []) {
                 const liveObject = liveObjectsMap[specFilePath]
                 if (!liveObject) continue
-                handleEventOrCall(event, liveObject.name, liveObject.LiveObjectClass, 'handleEvent')
+                handleInput(event, liveObject.name, liveObject.LiveObjectClass, 'handleEvent')
             }
         })
         console.log(chalk.green(`Subscribed to event ${eventName}`))
@@ -1166,46 +1201,69 @@ function subscribeToEventsAndCalls(
             for (const specFilePath of inputCallsMap[call.name] || []) {
                 const liveObject = liveObjectsMap[specFilePath]
                 if (!liveObject) continue
-                handleEventOrCall(call, liveObject.name, liveObject.LiveObjectClass, 'handleCall')
+                handleInput(call, liveObject.name, liveObject.LiveObjectClass, 'handleCall')
             }
         })
         console.log(chalk.green(`Subscribed to call ${callName}`))
     }
 }
 
-async function handleEventOrCall(
-    eventOrCall: Event | Call,
+async function handleInput(
+    input: Event | Call,
     liveObjectName: string,
     TargetLiveObject: LiveObject,
     handler: string,
     log: boolean = true
 ) {
-    eventOrCall.origin.blockNumber = BigInt.from(eventOrCall.origin.blockNumber)
+    input.origin.blockNumber = BigInt.from(input.origin.blockNumber)
     const logPrefix = chalk.gray(`${liveObjectName} |`)
 
-    // Create the Live Object with an event queue instance to capture published events.
-    const publishedEventQueue = new PublishEventQueue()
-    const liveObject = new TargetLiveObject(publishedEventQueue)
+    // Create the Live Object with queues to capture
+    // published events and any newly registered contracts.
+    const publishedEventQueue = new Queue()
+    const contractRegistrationQueue = new Queue()
+    const liveObject = new TargetLiveObject(publishedEventQueue, contractRegistrationQueue)
 
     // Handle the event or call and auto-save.
     try {
-        if (await liveObject[handler](eventOrCall)) {
+        if (await liveObject[handler](input)) {
             await liveObject.save()
         }
     } catch (err) {
-        console.error(`${logPrefix} Error handling ${eventOrCall.name}`, err, eventOrCall)
-        return { name: null, count: 0 }
+        console.error(`${logPrefix} Error handling ${input.name}`, err, input)
+        return { name: null, count: 0, registeredContracts: [] }
+    }
+
+    // New contracts to register to certain groups via a factory pattern.
+    const registeredContracts = liveObject._newContractInstances || []
+    const logNewContractResults = () => {
+        if (!log || !registeredContracts.length) return
+        console.log(
+            `\n${logPrefix} ${chalk.yellowBright(
+                `${registeredContracts.length} new contract${
+                    registeredContracts.length > 1 ? 's' : ''
+                } registered:`
+            )}`
+        )
+        registeredContracts.map(({ address, group, chainId }) => {
+            console.log(
+                `${chalk.gray('--')} ${address} ${chalk.gray('|')} ${chalk.yellowBright(
+                    group
+                )} ${chalk.gray('|')} ${chainId}`
+            )
+        })
     }
 
     // Live object events to be published due to the logic in the handler.
-    const liveObjectEvents = liveObject._publishedEvents
+    const liveObjectEvents = liveObject._publishedEvents || []
     const numResponseEvents = liveObjectEvents.length
     if (!numResponseEvents) {
         log && console.log(`${logPrefix} No changes to publish.`)
-        return { name: null, count: 0 }
+        logNewContractResults()
+        return { name: null, count: 0, registeredContracts }
     }
     if (!log) {
-        return { name: liveObjectEvents[0]?.name, count: numResponseEvents }
+        return { name: liveObjectEvents[0]?.name, count: numResponseEvents, registeredContracts }
     }
     console.log(
         `${logPrefix} ${chalk.cyanBright(
@@ -1213,6 +1271,7 @@ async function handleEventOrCall(
         )}`
     )
     console.log(numResponseEvents > 1 ? liveObjectEvents : liveObjectEvents[0])
+    logNewContractResults()
 }
 
 function mapColumnNamesToPgResult(result): StringKeyMap[] {
@@ -1349,9 +1408,10 @@ async function onTxRoute(req: Request) {
 
 let hasFetched = false
 async function fetchTestData(payload: StringKeyMap, apiKey: string): Promise<StringKeyMap> {
-    const url = Deno.args[2]
+    const origin = Deno.args[2]
+    const url = path.join(origin, routes.GENERATE_TEST_INPUTS)
     const abortController = new AbortController()
-    const timer = setTimeout(() => abortController.abort(), TEST_DATA_INITIAL_REQUEST_TIMEOUT)
+    const timer = setTimeout(() => abortController.abort(), REQUEST_TIMEOUT)
 
     const headers = {
         'Content-Type': 'application/json',
@@ -1451,6 +1511,7 @@ async function processTestDataInputs(
     }
 
     let numOutputEvents = 0
+    const newContracts = []
     const outputsBreakdown = {}
     for (const input of inputs) {
         const isCall = input?.hasOwnProperty('inputs')
@@ -1460,24 +1521,32 @@ async function processTestDataInputs(
         for (const specFilePath of inputsMap[input.name] || []) {
             const liveObject = liveObjectsMap[specFilePath]
             if (!liveObject) continue
-            const { name: outputEventName, count } = await handleEventOrCall(
+            const {
+                name: outputEventName,
+                count,
+                registeredContracts,
+            } = await handleInput(
                 input,
                 liveObject.name,
                 liveObject.LiveObjectClass,
                 handler,
                 false
             )
-            outputsBreakdown[outputEventName] = (outputsBreakdown[outputEventName] || 0) + count
+            if (outputEventName) {
+                outputsBreakdown[outputEventName] = (outputsBreakdown[outputEventName] || 0) + count
+            }
             numOutputEvents += count
+            newContracts.push(...registeredContracts)
         }
     }
 
-    numOutputEvents &&
-        console.log(
-            chalk.cyanBright(
-                `\nCurated ${numOutputEvents} output event${numOutputEvents > 1 ? 's' : ''}:`
-            )
+    console.log(
+        chalk.cyanBright(
+            numOutputEvents === 0
+                ? `\nNo output events curated.`
+                : `\nCurated ${numOutputEvents} output event${numOutputEvents === 1 ? '' : 's'}:`
         )
+    )
 
     const maxOutputNameLength = Math.max(...Object.keys(outputsBreakdown).map((n) => n.length))
     for (const name in outputsBreakdown) {
@@ -1486,6 +1555,23 @@ async function processTestDataInputs(
                 outputsBreakdown[name].toLocaleString()
             )}`
         )
+    }
+
+    if (newContracts.length) {
+        console.log(
+            chalk.yellowBright(
+                `\nRegistered ${newContracts.length} new contract${
+                    newContracts.length === 1 ? '' : 's'
+                }:`
+            )
+        )
+        newContracts.forEach(({ address, group, chainId }) => {
+            console.log(
+                `${chalk.gray('--')} ${address} ${chalk.gray('|')} ${chalk.yellowBright(
+                    group
+                )} ${chalk.gray('|')} ${chainId}`
+            )
+        })
     }
 
     return { inputsBreakdown, outputsBreakdown }
@@ -1604,7 +1690,8 @@ async function run() {
     if (!liveObjects.length) return
 
     // Import Live Objects and map them by path.
-    const liveObjectsMap = await buildLiveObjectsMap(liveObjects)
+    const liveObjectsMap = await buildLiveObjectsMap(liveObjects, options.apiKey)
+    if (liveObjectsMap === null) return
 
     // Map all input events & calls to the Live Objects that depend on them.
     const inputEventsMap = createInputEventsMap(liveObjectsMap)
@@ -1624,7 +1711,7 @@ async function run() {
     if (!apiKey) {
         console.log(
             `No api key found for the current project.\n` +
-                `Try running the "spec use project <namespace>/<project>" command again.`
+                `Try running the "spec use project <namespace>/<project>" command.`
         )
         return
     }

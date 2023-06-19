@@ -59,7 +59,7 @@ export async function testLiveObject(
         testLiveObjectFilePath,
         liveObjectFolderName,
         localSharedTablesDbUrl,
-        constants.TEST_DATA_URL,
+        constants.SPEC_API_ORIGIN,
         recent ? recent.toString() : 'false',
         from ? from.toISOString() : 'null',
         fromBlock ? fromBlock.toString() : 'null',

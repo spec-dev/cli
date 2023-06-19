@@ -14,6 +14,7 @@ import addStartCmd from './cmds/start'
 import addUpdateCmd from './cmds/update'
 import addVersionCmd from './cmds/version'
 import addGetCmd from './cmds/get'
+import addRegisterCmd from './cmds/register'
 
 addDBCmd(program)
 addLinkCmd(program)
@@ -29,5 +30,6 @@ addStartCmd(program)
 addUpdateCmd(program)
 addVersionCmd(program)
 addGetCmd(program)
+addRegisterCmd(program)
 
 program.parse()

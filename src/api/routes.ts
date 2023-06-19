@@ -5,6 +5,8 @@ const prefix = {
     USER: 'user',
     PROJECT: 'project',
     DEPLOYMENT: 'deployment',
+    CONTRACT_INSTANCES: 'contract-instances',
+    CONTRACT_REGISTRATION_JOB: 'contract-registration-job',
 }
 
 export const routes = {
@@ -13,6 +15,8 @@ export const routes = {
     CREATE_DEPLOYMENT: [prefix.DEPLOYMENT].join('/'),
     PROJECT_LOGS: [prefix.PROJECT, 'logs'].join('/'),
     GET_ABI: 'abi',
+    REGISTER_CONTRACTS: [prefix.CONTRACT_INSTANCES, 'register'].join('/'),
+    GET_CONTRACT_REGISTRATION_JOB: prefix.CONTRACT_REGISTRATION_JOB,
 }
 
 export const buildUrl = (route: string) => {

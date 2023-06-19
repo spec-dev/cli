@@ -11,12 +11,6 @@ export default {
     NO_CURRENT_ENV_MESSAGE: `No environment has been set as the current environment for this project yet (e.g. local, staging, prod).\nRun "spec use env <env>" and then try again.`,
     POPULATE_DB_CONN_CONFIG_MESSAGE:
         'Please specify the "name" of the database you wish to connect to within .spec/connect.toml.\nRun "spec init" if you need to initialize a new .spec/ config directory.',
-    INSTALL_DOCKER:
-        'Docker is required in order to run Spec locally. Please install docker and then try again.',
-    INSTALL_DOCKER_COMPOSE:
-        'docker-compose is required in order to run Spec locally. Please install docker-compose and then try again.',
-    RUN_DOCKER:
-        'Docker does not appear to be running...Make sure docker is started and then try again.',
     INSTALL_PSQL: 'Make sure postgres is installed, running, and "psql" is available.',
     MUST_BE_PG_URL: 'Database url must be a valid postgres url.',
     INSTALL_SPEC_CLIENT:
