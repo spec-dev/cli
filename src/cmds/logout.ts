@@ -1,6 +1,5 @@
-import netrc from 'netrc'
-import { logSuccess } from '../logger'
-import { getNetrcEntryId } from '../utils/auth'
+import { logSuccess, logFailure } from '../logger'
+import { deleteSession } from '../utils/auth'
 
 const CMD = 'logout'
 
@@ -12,9 +11,11 @@ function addLogoutCmd(program) {
  * Logout of Spec.
  */
 async function logout() {
-    const entries = netrc()
-    delete entries[getNetrcEntryId()]
-    netrc.save(entries)
+    const { error } = deleteSession()
+    if (error) {
+        logFailure(error)
+        return
+    }
     logSuccess('Successfully logged out.')
 }
 

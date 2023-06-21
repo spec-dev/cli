@@ -17,6 +17,18 @@ export function persistSession(email: string, token: string): StringKeyMap {
     return { error }
 }
 
+export function deleteSession(): StringKeyMap {
+    let error = null
+    try {
+        const entries = netrc()
+        delete entries[getNetrcEntryId()]
+        netrc.save(entries)
+    } catch (err) {
+        error = err?.message || err
+    }
+    return { error }
+}
+
 export function getSessionToken(): StringKeyMap {
     let token = null
     let error = null
@@ -27,6 +39,18 @@ export function getSessionToken(): StringKeyMap {
         error = err?.message || err
     }
     return { token, error }
+}
+
+export function getSessionLogin(): StringKeyMap {
+    let login = null
+    let error = null
+    try {
+        const entries = netrc()
+        login = (entries[getNetrcEntryId()] || {}).login || null
+    } catch (err) {
+        error = err?.message || err
+    }
+    return { login, error }
 }
 
 export function getNetrcEntryId(): string {
