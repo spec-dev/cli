@@ -12,7 +12,7 @@ import {
     TableSpec,
     ColumnSpec,
     BigInt,
-} from 'https://esm.sh/@spec.dev/core@0.0.89'
+} from 'https://esm.sh/@spec.dev/core@0.0.90'
 import { createEventClient, SpecEventClient } from 'https://esm.sh/@spec.dev/event-client@0.0.16'
 import {
     buildSelectQuery,
@@ -1181,7 +1181,13 @@ function subscribeToEventsAndCalls(
             for (const specFilePath of inputEventsMap[event.name] || []) {
                 const liveObject = liveObjectsMap[specFilePath]
                 if (!liveObject) continue
-                handleInput(event, liveObject.name, liveObject.LiveObjectClass, 'handleEvent')
+                handleInput(
+                    event,
+                    liveObject.name,
+                    liveObject.LiveObjectClass,
+                    apiKey,
+                    'handleEvent'
+                )
             }
         })
         console.log(chalk.green(`Subscribed to event ${eventName}`))
@@ -1201,7 +1207,7 @@ function subscribeToEventsAndCalls(
             for (const specFilePath of inputCallsMap[call.name] || []) {
                 const liveObject = liveObjectsMap[specFilePath]
                 if (!liveObject) continue
-                handleInput(call, liveObject.name, liveObject.LiveObjectClass, 'handleCall')
+                handleInput(call, liveObject.name, liveObject.LiveObjectClass, apiKey, 'handleCall')
             }
         })
         console.log(chalk.green(`Subscribed to call ${callName}`))
@@ -1212,6 +1218,7 @@ async function handleInput(
     input: Event | Call,
     liveObjectName: string,
     TargetLiveObject: LiveObject,
+    apiKey: string,
     handler: string,
     log: boolean = true
 ) {
@@ -1223,6 +1230,7 @@ async function handleInput(
     const publishedEventQueue = new Queue()
     const contractRegistrationQueue = new Queue()
     const liveObject = new TargetLiveObject(publishedEventQueue, contractRegistrationQueue)
+    liveObject._tablesApiToken = apiKey
 
     // Handle the event or call and auto-save.
     try {
@@ -1484,7 +1492,8 @@ async function processTestDataInputs(
     inputs: StringKeyMap[],
     inputEventsMap: StringKeyMap,
     inputCallsMap: StringKeyMap,
-    liveObjectsMap: StringKeyMap
+    liveObjectsMap: StringKeyMap,
+    apiKey: string
 ): Promise<StringKeyMap> {
     const inputsBreakdown = {}
     const numInputs = inputs.length
@@ -1529,6 +1538,7 @@ async function processTestDataInputs(
                 input,
                 liveObject.name,
                 liveObject.LiveObjectClass,
+                apiKey,
                 handler,
                 false
             )
@@ -1602,7 +1612,8 @@ async function streamTestData(
         data.inputs || [],
         inputEventsMap,
         inputCallsMap,
-        liveObjectsMap
+        liveObjectsMap,
+        options.apiKey
     )
     for (const name in inputsBreakdown) {
         aggregateInputsBreakdown[name] =

@@ -17,7 +17,11 @@ function addLogsCmd(program) {
         .command(CMD)
         .option('--local', 'Display logs for the locally running Spec instance')
         .option('--env <type>', 'Filter logs by Spec environment')
-        .option('--tail <number>', 'Lines of historical logs to show', constants.DEFAULT_LOG_TAIL_SIZE)
+        .option(
+            '--tail <number>',
+            'Lines of historical logs to show',
+            constants.DEFAULT_LOG_TAIL_SIZE
+        )
         .action(logs)
 }
 
