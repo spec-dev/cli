@@ -57,13 +57,13 @@ export async function startSpec(
     return { error: null }
 }
 
-export async function followLocalLogs(projectId: string): Promise<StringKeyMap> {
+export async function followLocalLogs(projectId: string, tail: number): Promise<StringKeyMap> {
     const logFilePath = path.join(constants.SPEC_GLOBAL_DIR, `${projectId}.log`)
     while (!fileExists(logFilePath)) {
         await sleep(100)
     }
     try {
-        execSync(`tail -n 20 -f ${logFilePath}`, { stdio: 'inherit' })
+        execSync(`tail -n ${tail} -f ${logFilePath}`, { stdio: 'inherit' })
     } catch (error) {
         return { error }
     }
