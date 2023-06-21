@@ -12,7 +12,7 @@ import {
     TableSpec,
     ColumnSpec,
     BigInt,
-} from 'https://esm.sh/@spec.dev/core@0.0.87'
+} from 'https://esm.sh/@spec.dev/core@0.0.88'
 import { createEventClient, SpecEventClient } from 'https://esm.sh/@spec.dev/event-client@0.0.16'
 import {
     buildSelectQuery,
@@ -1735,8 +1735,7 @@ async function run() {
         }),
         {
             port: options.port || 8000,
-            onListen({ port }) {
-                console.log(`Shared Tables API listening on port ${port}...`)
+            onListen() {
                 const shouldFetchHistoricalTestData =
                     options.from ||
                     options.fromBlock ||
