@@ -47,8 +47,8 @@ async function getProject(
     }
 }
 
-async function logs(projectId: string, sessionToken: string, env?: string) {
-    const params: any = { id: projectId }
+async function logs(projectId: string, sessionToken: string, tail: number, env?: string) {
+    const params: any = { id: projectId, tail: tail }
     if (env) {
         params.env = env
     }
