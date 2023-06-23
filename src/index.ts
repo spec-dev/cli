@@ -15,6 +15,7 @@ import addUpdateCmd from './cmds/update'
 import addVersionCmd from './cmds/version'
 import addGetCmd from './cmds/get'
 import addRegisterCmd from './cmds/register'
+import addLogoutCmd from './cmds/logout'
 
 addDBCmd(program)
 addLinkCmd(program)
@@ -31,5 +32,6 @@ addUpdateCmd(program)
 addVersionCmd(program)
 addGetCmd(program)
 addRegisterCmd(program)
+addLogoutCmd(program)
 
 program.parse()
