@@ -2,12 +2,13 @@ import path from 'path'
 import fs from 'fs'
 import { client } from '../../api/client'
 import msg from '../../utils/msg'
-import { log, logFailure, logSuccess } from '../../logger'
+import { log, logFailure, logSuccess, logWarning } from '../../logger'
 import { StringKeyMap, ContractRegistrationJobStatus } from '../../types'
 import { getSessionToken } from '../../utils/auth'
 import { chainIdsSet, chainNameForId } from '../../utils/chains'
 import { sleep } from '../../utils/time'
-import { isValidAddress, isValidContractGroup, isValidPath } from '../../utils/validators'
+import { resolveAbi } from '../../utils/abi'
+import { isValidAddress, isValidContractGroup } from '../../utils/validators'
 import progress from 'progress-string'
 import differ from 'ansi-diff-stream'
 import ora from 'ora'
@@ -54,7 +55,7 @@ export async function registerContracts(
 
     for (const address of contractAddresses) {
         if (!isValidAddress(address)) {
-            logFailure(`Invalid address: ${address}`)
+            logWarning(`Invalid address: ${address}`)
             return
         }
     }
@@ -65,14 +66,16 @@ export async function registerContracts(
 
     // Validate chain id.
     if (!chainIdsSet.has(opts.chain)) {
-        logFailure(`Invalid chain id ${opts.chain}`)
-        return { isValid: false }
+        logWarning(`Invalid chain id ${opts.chain}`)
+        return
     }
 
-    // Validate contract group structure (e.g. "nsp.Contract")
+    // Validate contract group structure (e.g. "nsp.ContractName")
     if (!isValidContractGroup(opts.group)) {
-        logFailure(`Invalid contract group ${opts.group}.`)
-        return { isValid: false }
+        logWarning(
+            `Invalid contract group "${opts.group}". Make sure it's in "nsp.GroupName" format.`
+        )
+        return
     }
     const [nsp, contractName] = opts.group.split('.')
 
@@ -175,42 +178,6 @@ async function pollForRegistrationResult(
 
         await sleep(POLL_INTERVAL)
     }
-}
-
-function resolveAbi(abiOption: string): StringKeyMap {
-    if (!abiOption) {
-        return { abi: null, isValid: true }
-    }
-
-    let abi: any = abiOption
-    if (isValidPath(abi)) {
-        // Try to read the ABI file in as JSON.
-        try {
-            abi = JSON.parse(fs.readFileSync(path.resolve(abiOption), 'utf8'))
-        } catch (err) {
-            logFailure(`Error parsing ABI as JSON for path ${abiOption}: ${err.message}`)
-            return { abi: null, isValid: false }
-        }
-
-        // Support hardhat/truffle artifacts.
-        if (typeof abi === 'object' && !Array.isArray(abi) && abi.hasOwnProperty('abi')) {
-            abi = abi.abi
-        }
-    } else {
-        try {
-            abi = JSON.parse(abi)
-        } catch (err) {
-            logFailure(`Error parsing ABI as JSON: ${err.message}`)
-            return { abi: null, isValid: false }
-        }
-    }
-
-    if (!Array.isArray(abi)) {
-        logFailure(`Invalid ABI: Expecting a JSON array.`)
-        return { abi: null, isValid: false }
-    }
-
-    return { abi, isValid: true }
 }
 
 export default addContractsCmd

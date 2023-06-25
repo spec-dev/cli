@@ -24,7 +24,6 @@ async function getABI(
 ) {
     // Get authed user's session token (if any).
     const { token: sessionToken, error } = getSessionToken()
-
     if (error) {
         logFailure(error)
         return

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { program } from './program'
+import addCreateCmd from './cmds/create'
 import addDBCmd from './cmds/db'
 import addLinkCmd from './cmds/link'
 import addNewCmd from './cmds/new'
@@ -17,6 +18,7 @@ import addGetCmd from './cmds/get'
 import addRegisterCmd from './cmds/register'
 import addLogoutCmd from './cmds/logout'
 
+addCreateCmd(program)
 addDBCmd(program)
 addLinkCmd(program)
 addNewCmd(program)
