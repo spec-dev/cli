@@ -1,5 +1,3 @@
-import path from 'path'
-import fs from 'fs'
 import { client } from '../../api/client'
 import msg from '../../utils/msg'
 import { log, logFailure, logSuccess, logWarning } from '../../logger'
