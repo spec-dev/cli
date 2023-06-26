@@ -2,8 +2,6 @@ import { StringKeyMap } from '../types'
 import qoa from 'qoa'
 import chalk from 'chalk'
 
-const delim = '|'
-
 const EMAIL_PROMPT = {
     type: 'input',
     query: 'Email:',
