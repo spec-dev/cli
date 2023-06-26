@@ -5,14 +5,15 @@ import { client } from '../../api/client'
 import { chainIdsSet } from '../../utils/chains'
 import { isValidContractGroup } from '../../utils/validators'
 import { resolveAbi } from '../../utils/abi'
+import { promptCreateContractGroupDetails } from '../../utils/prompt'
 
 const CMD = 'group'
 
 function addCreateGroupCmd(cmd) {
     cmd.command(CMD)
-        .argument('group', 'Name of the contract group in "nsp.ContractName" format')
-        .requiredOption('--chains <chains>', `The chain ids of the group's future contracts`)
-        .requiredOption('--abi <abi>', `Path to the group's ABI`)
+        .argument('[group]', 'Name of the contract group in "nsp.ContractName" format', null)
+        .option('--chains <chains>', `The chain ids of the group's future contracts`, null)
+        .option('--abi <abi>', `Path to the group's ABI`, null)
         .action(createGroup)
 }
 
@@ -37,12 +38,24 @@ async function createGroup(
         return
     }
 
+    // Prompt user for inputs if not given directly.
+    const promptResp = await promptCreateContractGroupDetails(group, opts.chains, opts.abi)
+
+    // Validate contract group structure (e.g. "nsp.ContractName")
+    if (!isValidContractGroup(promptResp.group)) {
+        logWarning(
+            `Invalid contract group "${promptResp.group}. Make sure it's in "nsp.ContractName" format.`
+        )
+        return
+    }
+    const [nsp, contractName] = promptResp.group.split('.')
+
     // Resolve, parse, and validate ABI.
-    const { abi, isValid: isAbiValid } = resolveAbi(opts.abi)
+    const { abi, isValid: isAbiValid } = resolveAbi(promptResp.abi)
     if (!isAbiValid) return
 
     // Validate chain ids.
-    const chainIds = (opts.chains || '')
+    const chainIds = (promptResp.chainIds || '')
         .split(',')
         .map((id) => id.trim())
         .filter((id) => !!id)
@@ -51,13 +64,6 @@ async function createGroup(
         logWarning(`Invalid chain ids: ${invalidChainIds.join(', ')}`)
         return
     }
-
-    // Validate contract group structure (e.g. "nsp.ContractName")
-    if (!isValidContractGroup(group)) {
-        logWarning(`Invalid contract group "${group}. Make sure it's in "nsp.ContractName" format.`)
-        return { isValid: false }
-    }
-    const [nsp, contractName] = group.split('.')
 
     // Create empty contract group.
     const { error: createError } = await client.createContractGroup(
@@ -68,7 +74,7 @@ async function createGroup(
         abi
     )
     if (createError) {
-        logFailure(`Creating group failed -- ${createError}.`)
+        logFailure(`Creating group failed -- ${createError}`)
         return
     }
 

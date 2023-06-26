@@ -8,7 +8,7 @@ const CMD = 'object'
 
 function addObjectCommand(cmd) {
     cmd.command(CMD)
-        .argument('[fullName]', 'The full name of the live object in "nsp.Name" format', '')
+        .argument('[fullName]', 'The full name of the live object in "nsp.Name" format', null)
         .action(newObject)
 }
 

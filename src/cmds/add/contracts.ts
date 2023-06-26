@@ -11,6 +11,7 @@ import progress from 'progress-string'
 import differ from 'ansi-diff-stream'
 import ora from 'ora'
 import chalk from 'chalk'
+import { promptAddContractsDetails } from '../../utils/prompt'
 
 const CMD = 'contract'
 
@@ -19,10 +20,10 @@ const POLL_INTERVAL = 1000
 function addContractsCmd(cmd) {
     cmd.command(CMD)
         .alias('contracts')
-        .argument('<addresses>', 'Addresses of deployed target contracts')
-        .requiredOption('--chain <chain>', 'Chain id of target blockchain')
-        .requiredOption('--group <group>', 'Contract group to register target contracts under')
-        .option('--abi <abi>', 'Path to ABI for target contracts', null)
+        .argument('[addresses]', 'Contract addresses', null)
+        .option('--chain <chain>', 'Chain id of contract addresses', null)
+        .option('--group <group>', 'Group to add contracts to', null)
+        .option('--abi <abi>', 'Path to ABI', null)
         .action(registerContracts)
 }
 
@@ -45,8 +46,12 @@ export async function registerContracts(
         return
     }
 
+    // Prompt user for inputs if not given directly.
+    const promptResp = await promptAddContractsDetails(addresses, opts.chain, opts.group, opts.abi)
+    const { chainId, group } = promptResp
+
     // Parse and validate contract addresses.
-    const contractAddresses = (addresses || '')
+    const contractAddresses = (promptResp.addresses || '')
         .split(',')
         .map((a) => a.trim().toLowerCase())
         .filter((a) => !!a)
@@ -59,28 +64,26 @@ export async function registerContracts(
     }
 
     // Resolve, parse, and validate ABI.
-    const { abi, isValid: isAbiValid } = resolveAbi(opts.abi)
+    const { abi, isValid: isAbiValid } = resolveAbi(promptResp.abi)
     if (!isAbiValid) return
 
     // Validate chain id.
-    if (!chainIdsSet.has(opts.chain)) {
-        logWarning(`Invalid chain id ${opts.chain}`)
+    if (!chainIdsSet.has(chainId)) {
+        logWarning(`Invalid chain id ${chainId}`)
         return
     }
 
     // Validate contract group structure (e.g. "nsp.ContractName")
-    if (!isValidContractGroup(opts.group)) {
-        logWarning(
-            `Invalid contract group "${opts.group}". Make sure it's in "nsp.GroupName" format.`
-        )
+    if (!isValidContractGroup(group)) {
+        logWarning(`Invalid contract group "${group}". Make sure it's in "nsp.GroupName" format.`)
         return
     }
-    const [nsp, contractName] = opts.group.split('.')
+    const [nsp, contractName] = group.split('.')
 
     // Register addresses in contract group.
     const { uid, error: registerError } = await client.registerContracts(
         sessionToken,
-        opts.chain,
+        chainId,
         nsp,
         contractName,
         contractAddresses,
@@ -91,7 +94,7 @@ export async function registerContracts(
         return
     }
 
-    await pollForRegistrationResult(uid, contractAddresses, opts.group, sessionToken)
+    await pollForRegistrationResult(uid, contractAddresses, group, sessionToken)
 }
 
 async function pollForRegistrationResult(
