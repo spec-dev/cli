@@ -16,73 +16,73 @@ const PASSWORD_PROMPT = {
 
 const NAMESPACE_PROMPT = {
     type: 'input',
-    query: 'Namespace:',
+    query: `${chalk.cyanBright('*')} Namespace:`,
     handle: 'namespace',
 }
 
 const NAME_PROMPT = {
     type: 'input',
-    query: 'Name:',
+    query: `${chalk.cyanBright('*')} Name:`,
     handle: 'name',
 }
 
 const CHAIN_IDS_PROMPT = {
     type: 'input',
-    query: `Chain ids ${chalk.gray(`(e.g. "1, 5, 137"):`)}`,
+    query: `${chalk.cyanBright('*')} Chain ids ${chalk.gray(`(e.g. "1, 5, 137"):`)}`,
     handle: 'chainIds',
 }
 
 const CHAIN_ID_PROMPT = {
     type: 'input',
-    query: `Chain id ${chalk.gray(`(e.g. "1"):`)}`,
+    query: `${chalk.cyanBright('*')} Chain id ${chalk.gray(`(e.g. "1"):`)}`,
     handle: 'chainId',
 }
 
 const DISPLAY_NAME_PROMPT = {
     type: 'input',
-    query: `Display Name (optional):`,
+    query: `${chalk.gray('?')} Display Name ${chalk.gray('(optional):')}`,
     handle: 'displayName',
 }
 
 const DESCRIPTION_PROMPT = {
     type: 'input',
-    query: `Description (optional):`,
+    query: `${chalk.gray('?')} Description ${chalk.gray('(optional):')}`,
     handle: 'description',
 }
 
 const INPUT_EVENTS_PROMPT = {
     type: 'input',
-    query: `Input Events (optional):`,
+    query: `${chalk.gray('?')} Input Events ${chalk.gray('(optional):')}`,
     handle: 'inputEvents',
 }
 
 const INPUT_CALLS_PROMPT = {
     type: 'input',
-    query: `Input Contract Calls (optional):`,
+    query: `${chalk.gray('?')} Input Contract Calls ${chalk.gray('(optional):')}`,
     handle: 'inputCalls',
 }
 
 const CONTRACT_GROUP_PROMPT = {
     type: 'input',
-    query: `Group name ${chalk.gray(`(e.g. "gitcoin.GovernorAlpha"):`)}`,
+    query: `${chalk.cyanBright('*')} Group name ${chalk.gray(`(e.g. "gitcoin.GovernorAlpha"):`)}`,
     handle: 'group',
 }
 
 const ABI_PROMPT = {
     type: 'input',
-    query: `Path to ABI ${chalk.gray(`(e.g. "./abis/Contract.json"):`)}`,
+    query: `${chalk.cyanBright('*')} Path to ABI ${chalk.gray(`(e.g. "./abis/Contract.json"):`)}`,
     handle: 'abi',
 }
 
 const OPTIONAL_ABI_PROMPT = {
     type: 'input',
-    query: `Path to ABI ${chalk.gray('(Optional if group already exists):')}`,
+    query: `${chalk.gray('?')} Path to ABI ${chalk.gray('(optional if group already exists):')}`,
     handle: 'abi',
 }
 
 const CONTRACT_ADDRESSES_PROMPT = {
     type: 'input',
-    query: `Contract addresses ${chalk.gray(`(e.g. "0xabc, 0x123"):`)}`,
+    query: `${chalk.cyanBright('*')} Contract addresses ${chalk.gray(`(e.g. "0xabc, 0x123"):`)}`,
     handle: 'addresses',
 }
 
