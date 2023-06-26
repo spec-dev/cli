@@ -7,7 +7,9 @@ import {
     RegisterContractsResponse,
     GetContractRegistrationJobResponse,
     GetABIResponse,
+    CreateContractGroupResponse,
     StringMap,
+    StringKeyMap,
 } from '../types'
 
 const formatAuthHeader = (sessionToken: string): StringMap => ({
@@ -92,7 +94,7 @@ async function registerContracts(
     nsp: string,
     name: string,
     addresses: string[],
-    abi: string
+    abi: StringKeyMap[]
 ): Promise<RegisterContractsResponse> {
     const { data, error } = await post(
         buildUrl(routes.REGISTER_CONTRACTS),
@@ -120,6 +122,26 @@ async function getContractRegistrationJob(
     return error ? { error } : data
 }
 
+async function createContractGroup(
+    sessionToken: string,
+    chainIds: string[],
+    nsp: string,
+    name: string,
+    abi: StringKeyMap[]
+): Promise<CreateContractGroupResponse> {
+    const { error } = await post(
+        buildUrl(routes.CREATE_CONTRACT_GROUP),
+        {
+            chainIds,
+            nsp,
+            name,
+            abi,
+        },
+        formatAuthHeader(sessionToken)
+    )
+    return { error }
+}
+
 export const client = {
     login,
     getProject,
@@ -127,4 +149,5 @@ export const client = {
     getABI,
     registerContracts,
     getContractRegistrationJob,
+    createContractGroup,
 }

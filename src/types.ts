@@ -49,6 +49,10 @@ export interface GetContractRegistrationJobResponse {
     updatedAt?: string
 }
 
+export interface CreateContractGroupResponse {
+    error?: string
+}
+
 export enum ContractRegistrationJobStatus {
     Created = 'created',
     Decoding = 'decoding',

@@ -7,6 +7,8 @@ const prefix = {
     DEPLOYMENT: 'deployment',
     CONTRACT_INSTANCES: 'contract-instances',
     CONTRACT_REGISTRATION_JOB: 'contract-registration-job',
+    CONTRACT: 'contract',
+    ABI: 'abi',
 }
 
 export const routes = {
@@ -14,9 +16,10 @@ export const routes = {
     GET_PROJECT: [prefix.PROJECT, 'with-key'].join('/'),
     CREATE_DEPLOYMENT: [prefix.DEPLOYMENT].join('/'),
     PROJECT_LOGS: [prefix.PROJECT, 'logs'].join('/'),
-    GET_ABI: 'abi',
+    GET_ABI: prefix.ABI,
     REGISTER_CONTRACTS: [prefix.CONTRACT_INSTANCES, 'register'].join('/'),
     GET_CONTRACT_REGISTRATION_JOB: prefix.CONTRACT_REGISTRATION_JOB,
+    CREATE_CONTRACT_GROUP: [prefix.CONTRACT, 'group'].join('/'),
 }
 
 export const buildUrl = (route: string) => {

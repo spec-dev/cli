@@ -1,17 +1,17 @@
-import path from 'path'
-import fs from 'fs'
 import { client } from '../../api/client'
 import msg from '../../utils/msg'
-import { log, logFailure, logSuccess } from '../../logger'
+import { log, logFailure, logSuccess, logWarning } from '../../logger'
 import { StringKeyMap, ContractRegistrationJobStatus } from '../../types'
 import { getSessionToken } from '../../utils/auth'
 import { chainIdsSet, chainNameForId } from '../../utils/chains'
 import { sleep } from '../../utils/time'
-import { isValidAddress, isValidContractGroup, isValidPath } from '../../utils/validators'
+import { resolveAbi } from '../../utils/abi'
+import { isValidAddress, isValidContractGroup } from '../../utils/validators'
 import progress from 'progress-string'
 import differ from 'ansi-diff-stream'
 import ora from 'ora'
 import chalk from 'chalk'
+import { promptAddContractsDetails } from '../../utils/prompt'
 
 const CMD = 'contract'
 
@@ -20,10 +20,10 @@ const POLL_INTERVAL = 1000
 function addContractsCmd(cmd) {
     cmd.command(CMD)
         .alias('contracts')
-        .argument('<addresses>', 'Addresses of deployed target contracts')
-        .requiredOption('--chain <chain>', 'Chain id of target blockchain')
-        .requiredOption('--group <group>', 'Contract group to register target contracts under')
-        .option('--abi <abi>', 'Path to ABI for target contracts', null)
+        .argument('[addresses]', 'Contract addresses', null)
+        .option('--chain <chain>', 'Chain id of contract addresses', null)
+        .option('--group <group>', 'Group to add contracts to', null)
+        .option('--abi <abi>', 'Path to ABI', null)
         .action(registerContracts)
 }
 
@@ -46,40 +46,44 @@ export async function registerContracts(
         return
     }
 
+    // Prompt user for inputs if not given directly.
+    const promptResp = await promptAddContractsDetails(addresses, opts.chain, opts.group, opts.abi)
+    const { chainId, group } = promptResp
+
     // Parse and validate contract addresses.
-    const contractAddresses = (addresses || '')
+    const contractAddresses = (promptResp.addresses || '')
         .split(',')
         .map((a) => a.trim().toLowerCase())
         .filter((a) => !!a)
 
     for (const address of contractAddresses) {
         if (!isValidAddress(address)) {
-            logFailure(`Invalid address: ${address}`)
+            logWarning(`Invalid address: ${address}`)
             return
         }
     }
 
     // Resolve, parse, and validate ABI.
-    const { abi, isValid: isAbiValid } = resolveAbi(opts.abi)
+    const { abi, isValid: isAbiValid } = resolveAbi(promptResp.abi)
     if (!isAbiValid) return
 
     // Validate chain id.
-    if (!chainIdsSet.has(opts.chain)) {
-        logFailure(`Invalid chain id ${opts.chain}`)
-        return { isValid: false }
+    if (!chainIdsSet.has(chainId)) {
+        logWarning(`Invalid chain id ${chainId}`)
+        return
     }
 
-    // Validate contract group structure (e.g. "nsp.Contract")
-    if (!isValidContractGroup(opts.group)) {
-        logFailure(`Invalid contract group ${opts.group}.`)
-        return { isValid: false }
+    // Validate contract group structure (e.g. "nsp.ContractName")
+    if (!isValidContractGroup(group)) {
+        logWarning(`Invalid contract group "${group}". Make sure it's in "nsp.GroupName" format.`)
+        return
     }
-    const [nsp, contractName] = opts.group.split('.')
+    const [nsp, contractName] = group.split('.')
 
     // Register addresses in contract group.
     const { uid, error: registerError } = await client.registerContracts(
         sessionToken,
-        opts.chain,
+        chainId,
         nsp,
         contractName,
         contractAddresses,
@@ -90,7 +94,7 @@ export async function registerContracts(
         return
     }
 
-    await pollForRegistrationResult(uid, contractAddresses, opts.group, sessionToken)
+    await pollForRegistrationResult(uid, contractAddresses, group, sessionToken)
 }
 
 async function pollForRegistrationResult(
@@ -175,42 +179,6 @@ async function pollForRegistrationResult(
 
         await sleep(POLL_INTERVAL)
     }
-}
-
-function resolveAbi(abiOption: string): StringKeyMap {
-    if (!abiOption) {
-        return { abi: null, isValid: true }
-    }
-
-    let abi: any = abiOption
-    if (isValidPath(abi)) {
-        // Try to read the ABI file in as JSON.
-        try {
-            abi = JSON.parse(fs.readFileSync(path.resolve(abiOption), 'utf8'))
-        } catch (err) {
-            logFailure(`Error parsing ABI as JSON for path ${abiOption}: ${err.message}`)
-            return { abi: null, isValid: false }
-        }
-
-        // Support hardhat/truffle artifacts.
-        if (typeof abi === 'object' && !Array.isArray(abi) && abi.hasOwnProperty('abi')) {
-            abi = abi.abi
-        }
-    } else {
-        try {
-            abi = JSON.parse(abi)
-        } catch (err) {
-            logFailure(`Error parsing ABI as JSON: ${err.message}`)
-            return { abi: null, isValid: false }
-        }
-    }
-
-    if (!Array.isArray(abi)) {
-        logFailure(`Invalid ABI: Expecting a JSON array.`)
-        return { abi: null, isValid: false }
-    }
-
-    return { abi, isValid: true }
 }
 
 export default addContractsCmd
