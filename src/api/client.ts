@@ -142,6 +142,13 @@ async function createContractGroup(
     return { error }
 }
 
+async function getContractGroup(group: string) {
+    const { error, data } = await get(buildUrl(routes.GET_CONTRACT_GROUP), {
+        group,
+    })
+    return { error, data }
+}
+
 export const client = {
     login,
     getProject,
@@ -150,4 +157,5 @@ export const client = {
     registerContracts,
     getContractRegistrationJob,
     createContractGroup,
+    getContractGroup,
 }

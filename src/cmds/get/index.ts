@@ -1,10 +1,12 @@
 import addGetABICmd from './abi'
+import addGetGroupCmd from './group'
 
 const CMD = 'get'
 
 function addGetCmd(program) {
-    const getAbi = program.command(CMD)
-    addGetABICmd(getAbi)
+    const getCmd = program.command(CMD)
+    addGetABICmd(getCmd)
+    addGetGroupCmd(getCmd)
 }
 
 export default addGetCmd
