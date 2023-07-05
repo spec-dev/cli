@@ -8,13 +8,13 @@ function addGetGroupCmd(cmd) {
 }
 
 async function getGroup(group: string) {
-    const { error: getGroupError, data } = await client.getContractGroup(group)
+    const { error: getGroupError, instances } = await client.getContractGroup(group)
     if (getGroupError) {
         logFailure(`Contract group retreival failed: ${getGroupError}`)
         return
     }
 
-    log(data)
+    log(instances)
 }
 
 export default addGetGroupCmd
