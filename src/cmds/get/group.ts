@@ -19,6 +19,7 @@ async function getGroup(group: string) {
         return
     }
 
+    // Get all contract addresses, across all chains, in this contract group.
     const { error: getGroupError, instances } = await client.getContractGroup(group)
     if (getGroupError) {
         logFailure(`Contract group retreival failed: ${getGroupError}`)
@@ -29,6 +30,7 @@ async function getGroup(group: string) {
         return
     }
 
+    // Show the addresses grouped by chain.
     log(formatInstances(instances))
 }
 
