@@ -33,15 +33,17 @@ async function getGroup(group: string) {
 }
 
 function formatInstances(instances: StringKeyMap): string {
-    let allGroups = ''
+    const allGroups = []
     for (const chainId in instances) {
-        const groupTitle = `${capitalize(chainNameForId[chainId])} ${chalk.gray('| ' + chainId)}`
+        const groupTitle = `${chalk.cyanBright(capitalize(chainNameForId[chainId]))} ${chalk.gray(
+            '| ' + chainId
+        )}`
         const addresses = Object.values(instances[chainId]).map((i: any) => i.address)
         const groupAddresses = addresses.map((a) => `    ${a}`).join('\n')
-        const group = `${groupTitle}\n\n${groupAddresses}\n\n`
-        allGroups += group
+        const group = `${groupTitle}\n\n${groupAddresses}\n`
+        allGroups.push(group)
     }
-    return allGroups
+    return allGroups.join('\n')
 }
 
 export default addGetGroupCmd
