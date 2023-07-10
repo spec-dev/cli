@@ -1,4 +1,4 @@
-import { log, logWarning } from '../../logger'
+import { log, logFailure, logWarning } from '../../logger'
 import { client } from '../../api/client'
 import { isValidContractGroup } from '../../utils/validators'
 import { capitalize } from '../../utils/formatters'
@@ -21,6 +21,10 @@ async function getGroup(group: string) {
 
     const { error: getGroupError, instances } = await client.getContractGroup(group)
     if (getGroupError) {
+        logFailure(`Contract group retreival failed: ${getGroupError}`)
+        return
+    }
+    if (!Object.keys(instances).length) {
         logWarning(`No group found for "${group}"`)
         return
     }
