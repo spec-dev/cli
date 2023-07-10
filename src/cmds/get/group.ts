@@ -1,0 +1,47 @@
+import { log, logFailure, logWarning } from '../../logger'
+import { client } from '../../api/client'
+import { isValidContractGroup } from '../../utils/validators'
+import { capitalize } from '../../utils/formatters'
+import { chainNameForId } from '../../utils/chains'
+import chalk from 'chalk'
+import { StringKeyMap } from '../../types'
+
+const CMD = 'group'
+
+function addGetGroupCmd(cmd) {
+    cmd.command(CMD).argument('group', 'Contract group to get the ABI for').action(getGroup)
+}
+
+async function getGroup(group: string) {
+    // Validate contract group structure (e.g. "nsp.ContractName")
+    if (!isValidContractGroup(group)) {
+        logWarning(`Invalid contract group "${group}". Make sure it's in "nsp.GroupName" format.`)
+        return
+    }
+
+    const { error: getGroupError, instances } = await client.getContractGroup(group)
+    if (getGroupError) {
+        logFailure(`Contract group retreival failed: ${getGroupError}`)
+        return
+    }
+    if (!Object.keys(instances).length) {
+        logWarning(`No group found for "${group}"`)
+        return
+    }
+
+    log(formatInstances(instances))
+}
+
+function formatInstances(instances: StringKeyMap): string {
+    let allGroups = ''
+    for (const chainId in instances) {
+        const groupTitle = `${capitalize(chainNameForId[chainId])} ${chalk.gray('| ' + chainId)}`
+        const addresses = Object.values(instances[chainId]).map((i: any) => i.address)
+        const groupAddresses = addresses.map((a) => `    ${a}`).join('\n')
+        const group = `${groupTitle}\n\n${groupAddresses}\n\n`
+        allGroups += group
+    }
+    return allGroups
+}
+
+export default addGetGroupCmd

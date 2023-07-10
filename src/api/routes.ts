@@ -20,6 +20,7 @@ export const routes = {
     REGISTER_CONTRACTS: [prefix.CONTRACT_INSTANCES, 'register'].join('/'),
     GET_CONTRACT_REGISTRATION_JOB: prefix.CONTRACT_REGISTRATION_JOB,
     CREATE_CONTRACT_GROUP: [prefix.CONTRACT, 'group'].join('/'),
+    GET_CONTRACT_GROUP: [prefix.CONTRACT, 'group'].join('/'),
 }
 
 export const buildUrl = (route: string) => {

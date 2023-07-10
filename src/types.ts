@@ -53,6 +53,11 @@ export interface CreateContractGroupResponse {
     error?: string
 }
 
+export interface GetContractGroupResponse {
+    error?: string
+    instances?: StringKeyMap
+}
+
 export enum ContractRegistrationJobStatus {
     Created = 'created',
     Decoding = 'decoding',

@@ -8,6 +8,7 @@ import {
     GetContractRegistrationJobResponse,
     GetABIResponse,
     CreateContractGroupResponse,
+    GetContractGroupResponse,
     StringMap,
     StringKeyMap,
 } from '../types'
@@ -142,6 +143,13 @@ async function createContractGroup(
     return { error }
 }
 
+async function getContractGroup(group: string): Promise<GetContractGroupResponse> {
+    const { error, data } = await get(buildUrl(routes.GET_CONTRACT_GROUP), {
+        group,
+    })
+    return error ? { error } : { instances: data?.instances || {} }
+}
+
 export const client = {
     login,
     getProject,
@@ -150,4 +158,5 @@ export const client = {
     registerContracts,
     getContractRegistrationJob,
     createContractGroup,
+    getContractGroup,
 }
