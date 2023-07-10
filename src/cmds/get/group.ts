@@ -1,6 +1,10 @@
-import { log, logFailure, logWarning } from '../../logger'
+import { log, logWarning } from '../../logger'
 import { client } from '../../api/client'
 import { isValidContractGroup } from '../../utils/validators'
+import { capitalize } from '../../utils/formatters'
+import { chainNameForId } from '../../utils/chains'
+import chalk from 'chalk'
+import { StringKeyMap } from '../../types'
 
 const CMD = 'group'
 
@@ -17,11 +21,23 @@ async function getGroup(group: string) {
 
     const { error: getGroupError, instances } = await client.getContractGroup(group)
     if (getGroupError) {
-        logFailure(`Contract group retreival failed: ${getGroupError}`)
+        logWarning(`No group found for "${group}"`)
         return
     }
 
-    log(instances)
+    log(formatInstances(instances))
+}
+
+function formatInstances(instances: StringKeyMap): string {
+    let allGroups = ''
+    for (const chainId in instances) {
+        const groupTitle = `${capitalize(chainNameForId[chainId])} ${chalk.gray('| ' + chainId)}`
+        const addresses = Object.values(instances[chainId]).map((i: any) => i.address)
+        const groupAddresses = addresses.map((a) => `    ${a}`).join('\n')
+        const group = `${groupTitle}\n\n${groupAddresses}\n\n`
+        allGroups += group
+    }
+    return allGroups
 }
 
 export default addGetGroupCmd
