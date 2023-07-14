@@ -6,9 +6,9 @@ import { StringKeyMap } from '../../types'
 
 const CMD = 'events'
 
-function addGroupEventsCmd(cmd) {
+function addGetEventsCmd(cmd) {
     cmd.command(CMD)
-        .requiredOption('--group <group>', 'Contract group to get events for')
+        .requiredOption('-g, --group <group>', 'Contract group to get events for')
         .action(getContractGroupEvents)
 }
 
@@ -19,10 +19,9 @@ async function getContractGroupEvents(opts: { group: string }) {
         return
     }
 
-    // Get all contract addresses, across all chains, in this contract group.
-    const { error: getGroupEvents, events } = await client.getContractGroupEvents(group)
-    if (getGroupEvents) {
-        logFailure(`Contract group retreival failed: ${getGroupEvents}`)
+    const { error, events } = await client.getContractGroupEvents(group)
+    if (error) {
+        logFailure(`Contract group event retreival failed: ${error}`)
         return
     }
 
@@ -52,4 +51,4 @@ function formatContractGroupEvents(events: StringKeyMap[]): string {
     return allEvents.join('\n')
 }
 
-export default addGroupEventsCmd
+export default addGetEventsCmd
