@@ -63,6 +63,11 @@ export interface GetContractGroupEventsResponse {
     events?: StringKeyMap[]
 }
 
+export interface GetContractGroupSampleEventResponse {
+    error?: string
+    event?: StringKeyMap
+}
+
 export enum ContractRegistrationJobStatus {
     Created = 'created',
     Decoding = 'decoding',

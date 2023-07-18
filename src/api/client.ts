@@ -10,6 +10,7 @@ import {
     CreateContractGroupResponse,
     GetContractGroupResponse,
     GetContractGroupEventsResponse,
+    GetContractGroupSampleEventResponse,
     StringMap,
     StringKeyMap,
 } from '../types'
@@ -159,6 +160,16 @@ async function getContractGroupEvents(group: string): Promise<GetContractGroupEv
     return error ? { error } : { events: data?.events || [] }
 }
 
+async function getContractGroupSampleEvent(
+    givenName: string
+): Promise<GetContractGroupSampleEventResponse> {
+    const { error, data } = await get(buildUrl(routes.GET_SAMPLE_EVENT_VERSION), {
+        givenName,
+    })
+
+    return error ? { error } : { event: data?.event }
+}
+
 export const client = {
     login,
     getProject,
@@ -169,4 +180,5 @@ export const client = {
     createContractGroup,
     getContractGroup,
     getContractGroupEvents,
+    getContractGroupSampleEvent,
 }
