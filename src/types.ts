@@ -25,7 +25,7 @@ export interface LinkProjectResponse {
     error?: string
 }
 
-export interface GetABIResponse {
+export interface GetAbiResponse {
     abi?: string
     error?: string
     message?: string

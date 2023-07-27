@@ -69,10 +69,11 @@ export async function testLiveObject(
         allTime ? allTime.toString() : 'false',
         keepData ? keepData.toString() : 'false',
         port ? port.toString() : 'null',
-        apiKey ? apiKey.toString() : 'null',
+        apiKey ? apiKey : 'null',
     ]
 
     process.env.SHARED_TABLES_ORIGIN = `http://localhost:${options.port}`
+    process.env.SPEC_RPC_AUTH_TOKEN = apiKey
 
     try {
         execSync(`deno run ${cmdArgs.join(' ')}`, { stdio: 'inherit' })

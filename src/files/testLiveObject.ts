@@ -12,7 +12,7 @@ import {
     TableSpec,
     ColumnSpec,
     BigInt,
-} from 'https://esm.sh/@spec.dev/core@0.0.91'
+} from 'https://esm.sh/@spec.dev/core@0.0.102'
 import { createEventClient, SpecEventClient } from 'https://esm.sh/@spec.dev/event-client@0.0.16'
 import {
     buildSelectQuery,
@@ -20,7 +20,7 @@ import {
     QueryPayload,
     ident,
     literal,
-} from 'https://esm.sh/@spec.dev/qb@0.0.2'
+} from 'https://esm.sh/@spec.dev/qb@0.0.4'
 import short from 'https://esm.sh/short-uuid@4.2.0'
 
 const chainNamespaces = {
@@ -54,12 +54,11 @@ const routes = {
     GENERATE_TEST_INPUTS: 'live-object-version/generate-test-inputs',
     RESOLVE_EVENT_VERSIONS: 'event-versions/resolve',
     RESOLVE_CALL_VERSIONS: 'call-versions/resolve',
+    GET_CONTRACT_GROUP_ABI: 'abi',
 }
 
 const REQUEST_TIMEOUT = 30000
 const AUTH_HEADER_NAME = 'Spec-Auth-Token'
-
-const MAX_TX_ENTRIES = 10
 
 const CONTRACTS_EVENT_NSP = 'contracts'
 
@@ -331,6 +330,22 @@ async function getLiveObjectsInGivenPath(folder: string, liveObjects: StringKeyM
     }
 }
 
+function getUniqueContractGroupsForLiveObject(liveObject: LiveObject): string[] {
+    const givenInputNames = [
+        ...Object.keys(liveObject._eventHandlers || {}),
+        ...Object.keys(liveObject._callHandlers || {}),
+    ]
+    const groups = new Set<string>()
+    for (const givenName of givenInputNames) {
+        const withoutVersion = givenName.includes('@') ? givenName.split('@')[0] : givenName
+        const comps = withoutVersion.split('.')
+        const l = comps.length
+        if (l < 3) continue
+        groups.add([comps[l - 3], comps[l - 2]].join('.'))
+    }
+    return Array.from(groups)
+}
+
 async function buildLiveObjectsMap(
     liveObjects: StringKeyMap[],
     apiKey: string
@@ -359,6 +374,19 @@ async function buildLiveObjectsMap(
         )
         if (inputCallNames === null) return null
 
+        const contractGroups = getUniqueContractGroupsForLiveObject(liveObjectInstance)
+        const abiResponses = await Promise.all(contractGroups.map(getContractGroupAbi))
+        const inputContractGroupAbis = {}
+        for (let i = 0; i < contractGroups.length; i++) {
+            const group = contractGroups[i]
+            const { data, error } = abiResponses[i]
+            if (error) {
+                console.error(chalk.yellow(error))
+                return null
+            }
+            inputContractGroupAbis[group] = data.abi
+        }
+
         liveObjectsMap[specFilePath] = {
             name,
             specFilePath,
@@ -366,6 +394,7 @@ async function buildLiveObjectsMap(
             liveObjectInstance,
             inputEventNames,
             inputCallNames,
+            inputContractGroupAbis,
         }
     }
     return liveObjectsMap
@@ -453,11 +482,6 @@ function getTxPayload(payload: StringKeyMap[]): [StringKeyMap[], boolean] {
         return [payload, false]
     }
 
-    if (payload.length > MAX_TX_ENTRIES) {
-        console.error(`Tx got more than max allowed entries`, payload.length)
-        return [payload, false]
-    }
-
     const queries = []
     for (const entry of payload) {
         const [query, isValid] = getQueryPayload(entry)
@@ -481,13 +505,15 @@ function buildQueryFromPayload(payload: StringKeyMap): QueryPayload | null {
     if (
         payload.data &&
         payload.hasOwnProperty('conflictColumns') &&
-        payload.hasOwnProperty('updateColumns')
+        payload.hasOwnProperty('updateColumns') &&
+        payload.hasOwnProperty('primaryTimestampColumn')
     ) {
         return buildUpsertQuery(
             table,
             payload.data,
             payload.conflictColumns || [],
             payload.updateColumns || [],
+            payload.primaryTimestampColumn,
             payload.returning
         )
     }
@@ -508,6 +534,8 @@ async function resolveInputsForLiveObject(
     apiKey: string
 ): Promise<string[] | null> {
     const inputNames = []
+    const uniqueChainAgnosticInputs: StringKeyMap = {}
+
     for (const givenName in registeredHandlers) {
         let fullName = givenName
 
@@ -519,11 +547,13 @@ async function resolveInputsForLiveObject(
         // Subscribe to inputs on all chains the live object
         // is associated with if chain is not specified.
         if (fullName.startsWith(`${CONTRACTS_EVENT_NSP}.`)) {
+            uniqueChainAgnosticInputs['.' + fullName.split('.').slice(1).join('.')] = givenName
             for (const nsp of chainNsps) {
                 inputNames.push([nsp, fullName].join('.'))
             }
         } else {
             inputNames.push(fullName)
+            uniqueChainAgnosticInputs[fullName] = givenName
         }
     }
     if (!inputNames.length) return []
@@ -534,10 +564,19 @@ async function resolveInputsForLiveObject(
         return null
     }
 
-    for (const fullName of inputNames) {
-        if (!inputVersionsMap[fullName]) {
+    // Ensure each input is registered with at least 1 chain.
+    const resolvedEventVersionNames = Object.values(inputVersionsMap) as string[]
+    for (const [maybePartialName, givenName] of Object.entries(uniqueChainAgnosticInputs)) {
+        let found = false
+        for (const resolvedName of resolvedEventVersionNames) {
+            if (resolvedName.includes(maybePartialName)) {
+                found = true
+                break
+            }
+        }
+        if (!found) {
             console.error(
-                chalk.yellow(`No registered ${subject} on Spec was found for "${fullName}"`)
+                chalk.yellow(`No ${subject} is currently registered that matches "${givenName}"`)
             )
             return null
         }
@@ -572,6 +611,38 @@ async function resolveInputVersions(
         })
     } catch (err) {
         error = `Unexpected error resolving input versions ${inputs.join(', ')}: ${stringify(err)}`
+    }
+    clearTimeout(timer)
+    if (error) return { error }
+
+    let data: any = {}
+    try {
+        data = (await resp.json()) || {}
+    } catch (err) {
+        error = `Error parsing JSON response: ${err}`
+    }
+
+    if (!error && data?.error) {
+        error = data.error
+    }
+
+    return { data, error }
+}
+
+async function getContractGroupAbi(group: string): Promise<StringKeyMap> {
+    const origin = Deno.args[2]
+    const url = `${path.join(origin, routes.GET_CONTRACT_GROUP_ABI)}?group=${group}`
+
+    const abortController = new AbortController()
+    const timer = setTimeout(() => abortController.abort(), REQUEST_TIMEOUT)
+
+    let resp, error
+    try {
+        resp = await fetch(url, {
+            signal: abortController.signal,
+        })
+    } catch (err) {
+        error = `Unexpected error getting ABI for contract group ${group}: ${stringify(err)}`
     }
     clearTimeout(timer)
     if (error) return { error }
@@ -1185,6 +1256,7 @@ function subscribeToEventsAndCalls(
                     event,
                     liveObject.name,
                     liveObject.LiveObjectClass,
+                    liveObject.inputContractGroupAbis,
                     apiKey,
                     'handleEvent'
                 )
@@ -1207,7 +1279,14 @@ function subscribeToEventsAndCalls(
             for (const specFilePath of inputCallsMap[call.name] || []) {
                 const liveObject = liveObjectsMap[specFilePath]
                 if (!liveObject) continue
-                handleInput(call, liveObject.name, liveObject.LiveObjectClass, apiKey, 'handleCall')
+                handleInput(
+                    call,
+                    liveObject.name,
+                    liveObject.LiveObjectClass,
+                    liveObject.inputContractGroupAbis,
+                    apiKey,
+                    'handleCall'
+                )
             }
         })
         console.log(chalk.green(`Subscribed to call ${callName}`))
@@ -1218,6 +1297,7 @@ async function handleInput(
     input: Event | Call,
     liveObjectName: string,
     TargetLiveObject: LiveObject,
+    inputContractGroupAbis: StringKeyMap,
     apiKey: string,
     handler: string,
     log: boolean = true
@@ -1229,7 +1309,11 @@ async function handleInput(
     // published events and any newly registered contracts.
     const publishedEventQueue = new Queue()
     const contractRegistrationQueue = new Queue()
-    const liveObject = new TargetLiveObject(publishedEventQueue, contractRegistrationQueue)
+    const liveObject = new TargetLiveObject(
+        inputContractGroupAbis,
+        publishedEventQueue,
+        contractRegistrationQueue
+    )
     liveObject._tablesApiToken = apiKey
 
     // Handle the event or call and auto-save.
@@ -1538,6 +1622,7 @@ async function processTestDataInputs(
                 input,
                 liveObject.name,
                 liveObject.LiveObjectClass,
+                liveObject.inputContractGroupAbis,
                 apiKey,
                 handler,
                 false

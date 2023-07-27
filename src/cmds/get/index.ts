@@ -1,4 +1,4 @@
-import addGetABICmd from './abi'
+import addGetAbiCmd from './abi'
 import addGetGroupCmd from './group'
 import addGetEventsCmd from './events'
 
@@ -6,7 +6,7 @@ const CMD = 'get'
 
 function addGetCmd(program) {
     const getCmd = program.command(CMD)
-    addGetABICmd(getCmd)
+    addGetAbiCmd(getCmd)
     addGetGroupCmd(getCmd)
     addGetEventsCmd(getCmd)
 }
