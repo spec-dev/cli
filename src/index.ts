@@ -5,6 +5,7 @@ import addCreateCmd from './cmds/create'
 import addDBCmd from './cmds/db'
 import addLinkCmd from './cmds/link'
 import addNewCmd from './cmds/new'
+import addPublishCmd from './cmds/publish'
 import addShowCmd from './cmds/show'
 import addTestCmd from './cmds/test'
 import addUseCmd from './cmds/use'
@@ -23,6 +24,7 @@ addCreateCmd(program)
 addDBCmd(program)
 addLinkCmd(program)
 addNewCmd(program)
+addPublishCmd(program)
 addShowCmd(program)
 addTestCmd(program)
 addUseCmd(program)

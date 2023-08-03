@@ -9,6 +9,7 @@ const prefix = {
     CONTRACT_REGISTRATION_JOB: 'contract-registration-job',
     CONTRACT: 'contract',
     ABI: 'abi',
+    LIVE_OBEJCT_VERSION: 'live-object-version',
 }
 
 export const routes = {
@@ -22,6 +23,7 @@ export const routes = {
     CREATE_CONTRACT_GROUP: [prefix.CONTRACT, 'group'].join('/'),
     GET_CONTRACT_GROUP: [prefix.CONTRACT, 'group'].join('/'),
     GET_CONTRACT_GROUP_EVENTS: [prefix.CONTRACT, 'group', 'events'].join('/'),
+    PUBLISH_OBJECT: [prefix.LIVE_OBEJCT_VERSION, 'publish'].join('/'),
 }
 
 export const buildUrl = (route: string) => {

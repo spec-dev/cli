@@ -18,6 +18,10 @@ const formatAuthHeader = (sessionToken: string): StringMap => ({
     [constants.USER_AUTH_HEADER_NAME]: sessionToken,
 })
 
+const formatApiKeyHeader = (apiKey: string): StringMap => ({
+    [constants.AUTH_HEADER_NAME]: apiKey,
+})
+
 async function login(email: string, password: string): Promise<LoginResponse> {
     // Perform login request.
     const { data, headers, error } = await post(buildUrl(routes.LOGIN), { email, password })
@@ -159,6 +163,26 @@ async function getContractGroupEvents(group: string): Promise<GetContractGroupEv
     return error ? { error } : { events: data?.events || [] }
 }
 
+async function publishObject(
+    namespace: string,
+    name: string,
+    folder: string,
+    sessionToken: string,
+    apiKey: string
+): Promise<StringMap> {
+    const { data, error } = await post(
+        buildUrl(routes.PUBLISH_OBJECT),
+        {
+            nsp: namespace,
+            name,
+            folder,
+        },
+        formatAuthHeader(sessionToken)
+    )
+    console.log(data, error)
+    return error ? { error } : data
+}
+
 export const client = {
     login,
     getProject,
@@ -169,4 +193,5 @@ export const client = {
     createContractGroup,
     getContractGroup,
     getContractGroupEvents,
+    publishObject,
 }
