@@ -12,7 +12,7 @@ import {
     TableSpec,
     ColumnSpec,
     BigInt,
-} from 'https://esm.sh/@spec.dev/core@0.0.102'
+} from 'https://esm.sh/@spec.dev/core@0.0.106'
 import { createEventClient, SpecEventClient } from 'https://esm.sh/@spec.dev/event-client@0.0.16'
 import {
     buildSelectQuery,
@@ -663,8 +663,8 @@ async function getContractGroupAbi(group: string): Promise<StringKeyMap> {
 
 async function getColumnsWithAttrs(schemaName: string, tableName: string): Promise<ColumnSpec[]> {
     const query = {
-        sql: `select column_name as name, data_type as type, is_nullable as nullable, column_default as "default" from information_schema.columns where table_schema = $1 and table_name in ($2, $3)`,
-        bindings: [schemaName, tableName, `"${tableName}"`],
+        sql: `select column_name as name, data_type as type, is_nullable as nullable, column_default as "default" from information_schema.columns where table_schema in ($1, $2) and table_name in ($3, $4)`,
+        bindings: [schemaName, `"${schemaName}"`, tableName, `"${tableName}"`],
     }
 
     let rows = []
@@ -713,8 +713,8 @@ async function upsertSchema(schemaName: string) {
 
 async function doesSchemaExist(name: string): Promise<boolean> {
     const query = {
-        sql: `select count(*) from information_schema.schemata where schema_name = $1`,
-        bindings: [name],
+        sql: `select count(*) from information_schema.schemata where schema_name in ($1, $2)`,
+        bindings: [name, `"${name}"`],
     }
     let rows = []
     try {
@@ -728,8 +728,8 @@ async function doesSchemaExist(name: string): Promise<boolean> {
 
 async function doesTableExist(schemaName: string, tableName: string): Promise<boolean> {
     const query = {
-        sql: `select count(*) from pg_tables where schemaname = $1 and tablename in ($2, $3)`,
-        bindings: [schemaName, tableName, `"${tableName}"`],
+        sql: `select count(*) from pg_tables where schemaname in ($1, $2) and tablename in ($3, $4)`,
+        bindings: [schemaName, `"${schemaName}"`, tableName, `"${tableName}"`],
     }
     let rows = []
     try {
@@ -751,14 +751,16 @@ export async function getConstraints(schemaName: string, tableName: string): Pro
             join pg_namespace n 
                 ON n.oid = c.connamespace 
             where contype IN ('p', 'u')
-            and n.nspname = $1
-            and conrelid::regclass::text in ($2, $3, $4, $5, $6)`,
+            and n.nspname in ($1, $2)
+            and conrelid::regclass::text in ($3, $4, $5, $6, $7, $8)`,
         bindings: [
             schemaName,
+            `"${schemaName}"`,
             tableName,
             `"${tableName}"`,
             `${schemaName}.${tableName}`,
             `"${schemaName}"."${tableName}"`,
+            `"${schemaName}".${tableName}`,
             `${schemaName}."${tableName}"`,
         ],
     })
@@ -772,9 +774,9 @@ export async function getConstraints(schemaName: string, tableName: string): Pro
                 indexname as conname,
                 indexdef as constraint
             from pg_indexes 
-            where schemaname = $1 
-            and tablename in ($2, $3)`,
-        bindings: [schemaName, tableName, `"${tableName}"`],
+            where schemaname in ($1, $2)
+            and tablename in ($3, $4)`,
+        bindings: [schemaName, `"${schemaName}"`, tableName, `"${tableName}"`],
     })
 
     const indexes = []
@@ -1091,15 +1093,16 @@ async function performTableChanges(newTableSpec: TableSpec, diffs: StringKeyMap)
 
     // Alter column defaults.
     txStatements.push(
-        ...defaultsChanged.map(({ name, newValue }) => {
+        ...defaultsChanged.map(({ name, currentValue, newValue }) => {
             let suffix
             if (newValue === null) {
                 suffix = 'drop default'
                 console.log(chalk.magenta(`Removing default value for column "${name}"`))
             } else {
-                console.log(
-                    chalk.magenta(`Setting default value for column "${name}" to ${newValue}`)
-                )
+                currentValue === null &&
+                    console.log(
+                        chalk.magenta(`Setting default value for column "${name}" to ${newValue}`)
+                    )
                 suffix = newValue.includes('(')
                     ? `set default ${newValue}`
                     : `set default ${literal(newValue)}`
