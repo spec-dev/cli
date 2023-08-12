@@ -50,18 +50,6 @@ const DESCRIPTION_PROMPT = {
     handle: 'description',
 }
 
-const INPUT_EVENTS_PROMPT = {
-    type: 'input',
-    query: `${chalk.gray('?')} Input Events ${chalk.gray('(optional):')}`,
-    handle: 'inputEvents',
-}
-
-const INPUT_CALLS_PROMPT = {
-    type: 'input',
-    query: `${chalk.gray('?')} Input Contract Calls ${chalk.gray('(optional):')}`,
-    handle: 'inputCalls',
-}
-
 const CONTRACT_GROUP_PROMPT = {
     type: 'input',
     query: `${chalk.cyanBright('*')} Group name ${chalk.gray(`(e.g. "gitcoin.GovernorAlpha"):`)}`,
@@ -134,8 +122,6 @@ export async function promptNewLiveObjectDetails(
     // Optional
     const displayName = (await qoa.prompt([DISPLAY_NAME_PROMPT])).displayName
     const description = (await qoa.prompt([DESCRIPTION_PROMPT])).description
-    const inputEvents = (await qoa.prompt([INPUT_EVENTS_PROMPT])).inputEvents
-    const inputCalls = (await qoa.prompt([INPUT_CALLS_PROMPT])).inputCalls
 
     return {
         namespace,
@@ -143,8 +129,6 @@ export async function promptNewLiveObjectDetails(
         chainIds,
         displayName,
         description,
-        inputEvents,
-        inputCalls,
     }
 }
 

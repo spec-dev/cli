@@ -29,10 +29,7 @@ async function newObject(fullName: string) {
 
     const promptResp = await promptNewLiveObjectDetails(namespace, name)
     ;({ namespace, name } = promptResp)
-
     const { chainIds, displayName, description } = promptResp
-    const inputEvents = parseInputEventOrCall(promptResp.inputEvents)
-    const inputCalls = parseInputEventOrCall(promptResp.inputCalls)
 
     // Parse & validate chain ids.
     const chains = unique((chainIds || '').split(',').map((id) => id.trim()))
@@ -56,19 +53,10 @@ async function newObject(fullName: string) {
         name,
         chains,
         displayName,
-        description,
-        inputEvents,
-        inputCalls
+        description
     )
     if (!success) return
     logSuccess(`Created template for live object "${liveObjectId}" in folder "./${name}"`)
-}
-
-function parseInputEventOrCall(input: string): string[] {
-    return (input || '')
-        .split(',')
-        .map((e) => e.trim())
-        .filter((e) => !!e)
 }
 
 export default addObjectCommand

@@ -122,32 +122,12 @@ const buildCallHandlerContents = (inputCalls: string[], addOnAllCalls: boolean):
     return callHandlers
 }
 
-const specFileContents = (
-    name: string,
-    description?: string,
-    inputEvents?: string[],
-    inputCalls?: string[]
-): string => {
-    inputEvents = inputEvents || []
-    inputCalls = inputCalls || []
-
-    const addOnAllEvents = inputEvents.length > 1
-    const addOnAllCalls = inputCalls.length > 1
-    const eventHandlers = buildEventHandlerContents(inputEvents, addOnAllEvents)
-    const callHandlers = buildCallHandlerContents(inputCalls, addOnAllCalls)
-
-    const imports = [
-        'LiveObject',
-        'Spec',
-        'Property',
-        'Event',
-        'OnEvent',
-        addOnAllEvents ? 'OnAllEvents' : '',
-        inputCalls.length ? 'Call' : '',
-        inputCalls.length ? 'OnCall' : '',
-        addOnAllCalls ? 'OnAllCalls' : '',
-        'Address',
-    ].filter((v) => !!v)
+const specFileContents = (name: string, description?: string): string => {
+    const eventHandlers = buildEventHandlerContents([], false)
+    const callHandlers = buildCallHandlerContents([], false)
+    const imports = ['LiveObject', 'Spec', 'Property', 'Event', 'OnEvent', 'Address'].filter(
+        (v) => !!v
+    )
 
     let contents = `import { ${imports.join(', ')} } from '@spec.dev/core'
 
@@ -223,9 +203,7 @@ export function upsertLiveObject(
     name: string,
     chains: string[],
     displayName?: string,
-    description?: string,
-    inputEvents?: string[],
-    inputCalls?: string[]
+    description?: string
 ): StringKeyMap {
     const liveObjectId = toNamespacedVersion(namespace, name, DEFAULT_VERSION)
     const liveObjectFolderPath = path.join(cwd, name)
@@ -248,7 +226,7 @@ export function upsertLiveObject(
     // Create "spec.ts" file.
     createFileWithContents(
         path.join(liveObjectFolderPath, files.SPEC),
-        fileContents.spec(name, description, inputEvents, inputCalls)
+        fileContents.spec(name, description)
     )
 
     return { liveObjectId, success: true }
