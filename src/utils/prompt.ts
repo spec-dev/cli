@@ -40,7 +40,7 @@ const CHAIN_ID_PROMPT = {
 
 const DISPLAY_NAME_PROMPT = {
     type: 'input',
-    query: `${chalk.gray('?')} Display Name ${chalk.gray('(optional):')}`,
+    query: `${chalk.gray('?')} Display name ${chalk.gray('(optional):')}`,
     handle: 'displayName',
 }
 
