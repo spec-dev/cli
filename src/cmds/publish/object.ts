@@ -48,19 +48,20 @@ async function publishObject(objectName: string) {
         return
     }
 
-    let namespace, name, folder
+    let namespace, name, folder, version
     try {
         const manifestPath = path.join(process.cwd(), objectName, 'manifest.json')
         const data = fs.readFileSync(manifestPath, 'utf8')
         const manifestJson = JSON.parse(data)
         namespace = manifestJson.namespace
         name = manifestJson.name
+        version = manifestJson.version
         folder = objectName
     } catch (err) {
         logFailure(`Error reading manifest file: ${err}`)
     }
 
-    await client.publishObject(namespace, name, folder, sessionToken, creds.apiKey)
+    await client.publishObject(namespace, name, folder, version, sessionToken, creds.apiKey)
 }
 
 export default publishObjectCommand

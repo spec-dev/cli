@@ -167,6 +167,7 @@ async function publishObject(
     namespace: string,
     name: string,
     folder: string,
+    version: string,
     sessionToken: string,
     apiKey: string
 ): Promise<StringMap> {
@@ -176,6 +177,7 @@ async function publishObject(
             nsp: namespace,
             name,
             folder,
+            version,
         },
         formatAuthHeader(sessionToken)
     )
