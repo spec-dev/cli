@@ -251,6 +251,14 @@ function toNumber(val: any): number | null {
     return Number.isNaN(num) ? null : num
 }
 
+function abbrevEventWithVersion(fullEventName: string): string {
+    const [nspName, version] = fullEventName.split('@')
+    if (!version || version.length <= 10) {
+        return fullEventName
+    }
+    return `${nspName}@${version.slice(0, 10)}...`
+}
+
 function parseOptions(): StringKeyMap {
     const values = Deno.args.slice(3) || []
     const options = {
@@ -355,6 +363,7 @@ async function buildLiveObjectsMap(
         const LiveObjectClass = await importLiveObject(specFilePath)
         const liveObjectInstance = new LiveObjectClass()
         const chainNsps = await getLiveObjectChainNamespaces(specFilePath)
+        const resolvesMetadata = await doesLiveObjectResolveMetadata(specFilePath)
 
         const inputEventNames = await resolveInputsForLiveObject(
             liveObjectInstance._eventHandlers,
@@ -395,6 +404,7 @@ async function buildLiveObjectsMap(
             inputEventNames,
             inputCallNames,
             inputContractGroupAbis,
+            resolvesMetadata,
         }
     }
     return liveObjectsMap
@@ -424,6 +434,11 @@ async function readManifest(liveObjectSpecPath: string): Promise<StringKeyMap> {
     let splitSpecConfigDirPath = liveObjectSpecPath.split('/')
     splitSpecConfigDirPath.pop()
     return await readJsonFile(`${splitSpecConfigDirPath.join('/')}/${liveObjectFileNames.MANIFEST}`)
+}
+
+async function doesLiveObjectResolveMetadata(path: string): Promise<boolean> {
+    const liveObjectCode = await readTextFile(path)
+    return liveObjectCode.includes(` resolveMetadata(`)
 }
 
 function createInputEventsMap(liveObjectsMap: StringKeyMap): StringKeyMap {
@@ -1265,7 +1280,8 @@ function subscribeToEventsAndCalls(
                 )
             }
         })
-        console.log(chalk.green(`Subscribed to event ${eventName}`))
+
+        console.log(chalk.green(`Subscribed to event ${abbrevEventWithVersion(eventName)}`))
     }
 
     // Subsribe to all input calls.
@@ -1597,22 +1613,40 @@ async function processTestDataInputs(
         inputsBreakdown[input.name] = (inputsBreakdown[input.name] || 0) + 1
     }
 
-    const maxInputNameLength = Math.max(...Object.keys(inputsBreakdown).map((n) => n.length))
+    const maxInputNameLength = Math.max(
+        ...Object.keys(inputsBreakdown)
+            .map(abbrevEventWithVersion)
+            .map((n) => n.length)
+    )
     for (const name in inputsBreakdown) {
         console.log(
-            `${chalk.gray('--')} ${padToLength(name, maxInputNameLength)}  ${chalk.green(
-                inputsBreakdown[name].toLocaleString()
-            )}`
+            `${chalk.gray('--')} ${padToLength(
+                abbrevEventWithVersion(name),
+                maxInputNameLength
+            )}  ${chalk.green(inputsBreakdown[name].toLocaleString())}`
         )
+    }
+
+    const resolvesMetadata = !!Object.values(liveObjectsMap).find(
+        (entry) => !!(entry as StringKeyMap).resolvesMetadata
+    )
+    if (resolvesMetadata && inputs.length) {
+        console.log(chalk.green(`...and resolving metadata...`))
     }
 
     let numOutputEvents = 0
     const newContracts = []
     const outputsBreakdown = {}
+    let i = 0
     for (const input of inputs) {
+        i++
         const isCall = input?.hasOwnProperty('inputs')
         const inputsMap = isCall ? inputCallsMap : inputEventsMap
         const handler = isCall ? 'handleCall' : 'handleEvent'
+
+        if (resolvesMetadata) {
+            console.log(chalk.dim(`   ${i} / ${chalk.green(inputs.length)}`))
+        }
 
         for (const specFilePath of inputsMap[input.name] || []) {
             const liveObject = liveObjectsMap[specFilePath]
@@ -1731,13 +1765,16 @@ async function streamTestData(
 
     console.log(chalk.green(`Final inputs breakdown:`))
     const maxInputNameLength = Math.max(
-        ...Object.keys(aggregateInputsBreakdown).map((n) => n.length)
+        ...Object.keys(aggregateInputsBreakdown)
+            .map(abbrevEventWithVersion)
+            .map((n) => n.length)
     )
     for (const name in aggregateInputsBreakdown) {
         console.log(
-            `${chalk.gray('--')} ${padToLength(name, maxInputNameLength)}  ${chalk.green(
-                aggregateInputsBreakdown[name].toLocaleString()
-            )}`
+            `${chalk.gray('--')} ${padToLength(
+                abbrevEventWithVersion(name),
+                maxInputNameLength
+            )}  ${chalk.green(aggregateInputsBreakdown[name].toLocaleString())}`
         )
     }
 
