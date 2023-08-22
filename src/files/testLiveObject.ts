@@ -1631,7 +1631,7 @@ async function processTestDataInputs(
         (entry) => !!(entry as StringKeyMap).resolvesMetadata
     )
     if (resolvesMetadata && inputs.length) {
-        console.log(chalk.green(`...and resolving metadata...`))
+        console.log(chalk.green(`   ...and resolving metadata...`))
     }
 
     let numOutputEvents = 0
