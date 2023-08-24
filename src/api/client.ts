@@ -182,7 +182,6 @@ async function publishObject(
         },
         formatAuthHeader(sessionToken)
     )
-    console.log(data, error)
     return error ? { error } : data
 }
 
