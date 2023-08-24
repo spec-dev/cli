@@ -6,6 +6,7 @@ import {
     LoginResponse,
     RegisterContractsResponse,
     GetContractRegistrationJobResponse,
+    GetPublishLiveObjectVersionJobResponse,
     GetABIResponse,
     CreateContractGroupResponse,
     GetContractGroupResponse,
@@ -185,6 +186,18 @@ async function publishObject(
     return error ? { error } : data
 }
 
+async function getPublishLiveObjectVersionJob(
+    sessionToken: string,
+    uid: string
+): Promise<GetPublishLiveObjectVersionJobResponse> {
+    const { data, error } = await get(
+        buildUrl(routes.GET_PUBLISH_OBJECT_VERSION_JOB_JOB),
+        { uid },
+        formatAuthHeader(sessionToken)
+    )
+    return error ? { error } : data
+}
+
 export const client = {
     login,
     getProject,
@@ -196,4 +209,5 @@ export const client = {
     getContractGroup,
     getContractGroupEvents,
     publishObject,
+    getPublishLiveObjectVersionJob,
 }

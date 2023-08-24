@@ -49,6 +49,19 @@ export interface GetContractRegistrationJobResponse {
     updatedAt?: string
 }
 
+export interface GetPublishLiveObjectVersionJobResponse {
+    uid?: string
+    nsp?: string
+    name?: string
+    version?: string
+    status?: PublishLiveObjectVersionJobStatus
+    cursor?: string
+    failed?: boolean
+    error?: string
+    createdAt?: string
+    updatedAt?: string
+}
+
 export interface CreateContractGroupResponse {
     error?: string
 }
@@ -66,6 +79,14 @@ export interface GetContractGroupEventsResponse {
 export enum ContractRegistrationJobStatus {
     Created = 'created',
     Decoding = 'decoding',
+    Indexing = 'indexing',
+    Complete = 'complete',
+}
+
+export enum PublishLiveObjectVersionJobStatus {
+    Created = 'created',
+    Migrating = 'migrating',
+    Publishing = 'publishing',
     Indexing = 'indexing',
     Complete = 'complete',
 }
