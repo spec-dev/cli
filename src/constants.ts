@@ -22,13 +22,13 @@ const constants: StringKeyMap = {
     SPEC_API_ORIGIN: ev('SPEC_API_ORIGIN', 'https://api.spec.dev'),
     USER_AUTH_HEADER_NAME: 'Spec-User-Auth-Token',
 
-    // Default DB config.
+    // DB defaults.
     SPEC_DB_USER: 'spec',
     DB_PORT: 5432,
 
-    // Local shared tables API (for live object testing).
-    SHARED_TABLES_DB_NAME: 'shared-tables',
-    LOCAL_SHARED_TABLES_API_PORT: 8000,
+    // Local Live Object testing.
+    LIVE_OBJECT_TESTING_DB_NAME: 'live-object-testing',
+    LIVE_OBJECT_TESTING_API_PORT: 8000,
 
     // Desktop app name.
     SPEC_APP_NAME: 'Spec',

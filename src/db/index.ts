@@ -84,11 +84,11 @@ export function getCurrentDbUser(): StringKeyMap {
     }
 }
 
-export function upsertSharedTablesDB(): StringKeyMap {
+export function upsertLiveObjectTestingDB(): StringKeyMap {
     let exists = false
     try {
         const out = execSync(
-            `psql -c "select datname FROM pg_catalog.pg_database where lower(datname) = lower('${constants.SHARED_TABLES_DB_NAME}')"`
+            `psql -c "select datname FROM pg_catalog.pg_database where lower(datname) = lower('${constants.LIVE_OBJECT_TESTING_DB_NAME}')"`
         )
         exists = out.toString().trim().split('\n').length > 3
     } catch (err) {
@@ -99,7 +99,7 @@ export function upsertSharedTablesDB(): StringKeyMap {
     }
 
     try {
-        execSync(`createdb ${constants.SHARED_TABLES_DB_NAME}`)
+        execSync(`createdb ${constants.LIVE_OBJECT_TESTING_DB_NAME}`)
     } catch (err) {
         return { error: err }
     }

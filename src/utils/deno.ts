@@ -45,11 +45,8 @@ export async function testLiveObject(
     }
 
     hasCachedDenoTestFile() || cacheDenoTestFile()
-
-    const localSharedTablesDbUrl = `postgres://${user}:@localhost:5432/${constants.SHARED_TABLES_DB_NAME}`
-
+    const liveObjectTestingDbUrl = `postgres://${user}:@localhost:5432/${constants.LIVE_OBJECT_TESTING_DB_NAME}`
     const { recent, from, fromBlock, to, toBlock, chains, allTime, keepData, port } = options
-
     const cmdArgs = [
         '--cached-only',
         '--allow-env',
@@ -58,7 +55,7 @@ export async function testLiveObject(
         '--importmap=imports.json',
         testLiveObjectFilePath,
         liveObjectFolderName,
-        localSharedTablesDbUrl,
+        liveObjectTestingDbUrl,
         constants.SPEC_API_ORIGIN,
         recent ? recent.toString() : 'false',
         from ? from.toISOString() : 'null',
@@ -80,5 +77,6 @@ export async function testLiveObject(
     } catch (error) {
         return { error }
     }
+
     return { error: null }
 }

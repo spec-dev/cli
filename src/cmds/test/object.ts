@@ -3,7 +3,7 @@ import constants from '../../constants'
 import { ensureDenoInstalled, testLiveObject } from '../../utils/deno'
 import msg from '../../utils/msg'
 import { toNumber, toDate } from '../../utils/formatters'
-import { psqlInstalled, upsertSharedTablesDB } from '../../db'
+import { psqlInstalled, upsertLiveObjectTestingDB } from '../../db'
 import { getProjectCreds, getCurrentProjectId } from '../../config/global'
 import { chainIdsSet } from '../../utils/chains'
 import { addDays, subtractDays } from '../../utils/date'
@@ -51,10 +51,10 @@ async function testObject(name, opts) {
         return
     }
 
-    // Ensure the "shared-tables" database exists locally.
-    const { error: sharedTablesDbError } = upsertSharedTablesDB()
-    if (sharedTablesDbError) {
-        logFailure(`Failed to upsert the "shared-tables" database locally: ${sharedTablesDbError}`)
+    // Ensure the live object testing database exists locally.
+    const { error: dbError } = upsertLiveObjectTestingDB()
+    if (dbError) {
+        logFailure(`Failed to upsert the live object testing database locally: ${dbError}`)
         return
     }
 
@@ -187,7 +187,7 @@ function validateOptions(options: StringKeyMap): StringKeyMap {
         chains: chainIds.join(','),
         allTime: !!allTime,
         keepData: !!keepData,
-        port: toNumber(options.port) || constants.LOCAL_SHARED_TABLES_API_PORT,
+        port: toNumber(options.port) || constants.LIVE_OBJECT_TESTING_API_PORT,
     }
 
     return { options: opts, isValid: true }
