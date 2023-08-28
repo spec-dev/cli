@@ -1,0 +1,6 @@
+#!/bin/bash
+
+npm run build
+mkdir ./dist/files
+cp -r ./src/files ./dist
+npm publish
