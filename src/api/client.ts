@@ -157,8 +157,7 @@ async function publishObject(
     name: string,
     folder: string,
     version: string,
-    sessionToken: string,
-    apiKey: string
+    sessionToken: string
 ): Promise<StringMap> {
     const { data, error } = await post(
         buildUrl(routes.PUBLISH_OBJECT),

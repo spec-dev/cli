@@ -17,33 +17,11 @@ const CMD = 'object'
 
 function publishObjectCommand(cmd) {
     cmd.command(CMD)
-        .argument('[objectName]', 'The full name of the live object in "nsp.Name" format', null)
+        .argument('[objectName]', 'The full name of the live object folder', null)
         .action(publishObject)
 }
 
 async function publishObject(objectName: string) {
-    // Get current project id.
-    const { data: projectId, error } = getCurrentProjectId()
-    if (error) {
-        logFailure(error)
-        return
-    }
-    if (!projectId) {
-        logWarning(msg.CHOOSE_PROJECT_MESSAGE)
-        return
-    }
-
-    // Get current project credentials from global spec creds file.
-    const { data: creds, error: credsError } = getProjectCreds(projectId)
-    if (credsError) {
-        logFailure(`Error finding project credentials: ${credsError}`)
-        return
-    }
-    if (!creds?.apiKey) {
-        logWarning(msg.CHOOSE_PROJECT_MESSAGE)
-        return
-    }
-
     // Get authed user's session token
     const { token: sessionToken, error: sessionTokenError } = getSessionToken()
     if (sessionTokenError) {
@@ -74,8 +52,7 @@ async function publishObject(objectName: string) {
         name,
         folder,
         version,
-        sessionToken,
-        creds.apiKey
+        sessionToken
     )
     if (data.error) {
         logFailure(`Error publishing object: ${data.error}`)
@@ -126,12 +103,12 @@ async function pollForPublishObjectResult(
 
         // Running migrations on shared tables.
         if (status === PublishLiveObjectVersionJobStatus.Migrating) {
-            // logProgress(cursor)
+            logProgress(cursor)
             spinner.text = `Running shared-table migrations for ${nsp} ${name} ${version}`
         }
 
         if (status === PublishLiveObjectVersionJobStatus.Publishing) {
-            // logProgress(cursor)
+            logProgress(cursor)
             spinner.text = `Publishing core tables for ${nsp} ${name} ${version}`
         }
 
