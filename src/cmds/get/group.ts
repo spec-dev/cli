@@ -26,7 +26,7 @@ async function getGroup(group: string) {
         return
     }
     if (!Object.keys(instances).length) {
-        logWarning(`No group found for "${group}"`)
+        logWarning(`No contracts found in group "${group}"`)
         return
     }
 
