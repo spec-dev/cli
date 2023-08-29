@@ -78,7 +78,7 @@ async function createGroup(
         return
     }
 
-    logSuccess(`Successfully created contract group "${group}".`)
+    logSuccess(`Successfully created contract group "${promptResp.group}".`)
 }
 
 export default addCreateGroupCmd
