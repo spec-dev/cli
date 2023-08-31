@@ -4,7 +4,7 @@ import addObjectCmd from './object'
 const CMD = 'new'
 
 function addNewCmd(program) {
-    const newCmd = program.command(CMD)
+    const newCmd = program.command(CMD).description('...')
     addMigrationCmd(newCmd)
     addObjectCmd(newCmd)
 }

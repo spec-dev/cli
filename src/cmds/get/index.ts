@@ -5,7 +5,7 @@ import addGetEventsCmd from './events'
 const CMD = 'get'
 
 function addGetCmd(program) {
-    const getCmd = program.command(CMD)
+    const getCmd = program.command(CMD).description('...')
     addGetAbiCmd(getCmd)
     addGetGroupCmd(getCmd)
     addGetEventsCmd(getCmd)

@@ -6,7 +6,7 @@ import addUserCmd from './user'
 const CMD = 'show'
 
 function addShowCmd(program) {
-    const show = program.command(CMD)
+    const show = program.command(CMD).description('...')
     addEnvCmd(show)
     addLocationCmd(show)
     addProjectCmd(show)

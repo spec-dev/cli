@@ -15,6 +15,7 @@ const CMD = 'logs'
 function addLogsCmd(program) {
     program
         .command(CMD)
+        .description('Tail the logs of your current Spec project')
         .option('--local', 'Display logs for the locally running Spec instance')
         .option('--env <type>', 'Filter logs by Spec environment')
         .option(

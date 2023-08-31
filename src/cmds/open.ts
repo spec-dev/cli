@@ -4,7 +4,7 @@ import constants from '../constants'
 const CMD = 'open'
 
 function addOpenCmd(program) {
-    program.command(CMD).action(openSpec)
+    program.command(CMD).description('Open the Spec desktop app').action(openSpec)
 }
 
 /**
