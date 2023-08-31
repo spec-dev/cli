@@ -5,7 +5,7 @@ import msg from '../../utils/msg'
 const CMD = 'user'
 
 function addUserCmd(cmd) {
-    cmd.command(CMD).action(showUser)
+    cmd.command(CMD).description('Show the current user').action(showUser)
 }
 
 /**

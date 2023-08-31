@@ -6,7 +6,10 @@ import { newMigration, saveMigration } from '../../config/migrations'
 const CMD = 'migration'
 
 function addMigrationCmd(cmd) {
-    cmd.command(CMD).argument('name', 'Name of the migration').action(newEmptyMigration)
+    cmd.command(CMD)
+        .description('Create a new migration for the current project')
+        .argument('name', 'Name of the migration')
+        .action(newEmptyMigration)
 }
 
 /**

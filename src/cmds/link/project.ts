@@ -12,13 +12,14 @@ const CMD = 'project'
 
 function addProjectCmd(cmd) {
     cmd.command(CMD)
+        .description('Set the local path for a project')
         .argument('project', 'The project to link in <namespace>/<project> format')
         .argument('directory', 'Local path to the project (should contain a ".spec/" folder)')
         .action(linkProject)
 }
 
 /**
- * Set the local location for an existing Spec project.
+ * Set the local path for a project.
  */
 async function linkProject(projectPath: string, localPath: string) {
     // Ensure specified location actually exists.

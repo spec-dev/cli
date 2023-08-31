@@ -9,9 +9,15 @@ import { StringKeyMap } from '../../types'
 const CMD = 'group'
 
 function addGetGroupCmd(cmd) {
-    cmd.command(CMD).argument('group', 'Contract group to get the ABI for').action(getGroup)
+    cmd.command(CMD)
+        .description('List the addresses in a Contract Group')
+        .argument('group', 'Contract group to get the ABI for')
+        .action(getGroup)
 }
 
+/**
+ * List the addresses in a Contract Group.
+ */
 async function getGroup(group: string) {
     // Validate contract group structure (e.g. "nsp.ContractName")
     if (!isValidContractGroup(group)) {

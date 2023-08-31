@@ -5,12 +5,13 @@ const CMD = 'env'
 
 function addEnvCmd(cmd) {
     cmd.command(CMD)
+        .description('Set the environment for the current project')
         .argument('env', 'The project environment inside "connect.toml" to set as current.')
         .action(useEnv)
 }
 
 /**
- * Set the env for the current project.
+ * Set the environment for the current project.
  */
 export async function useEnv(env: string) {
     /*

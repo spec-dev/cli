@@ -11,6 +11,7 @@ const CMD = 'group'
 
 function addCreateGroupCmd(cmd) {
     cmd.command(CMD)
+        .description('Create a new Contract Group')
         .argument('[group]', 'Name of the contract group in "nsp.ContractName" format', null)
         .option('--chains <chains>', `The chain ids of the group's future contracts`, null)
         .option('--abi <abi>', `Path to the group's ABI`, null)

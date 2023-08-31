@@ -20,6 +20,7 @@ const POLL_INTERVAL = 1000
 function addContractsCmd(cmd) {
     cmd.command(CMD)
         .alias('contracts')
+        .description('Add contract addresses to a Contract Group')
         .argument('[addresses]', 'Contract addresses', null)
         .option('--chain <chain>', 'Chain id of contract addresses', null)
         .option('--group <group>', 'Group to add contracts to', null)

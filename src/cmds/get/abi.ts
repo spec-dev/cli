@@ -5,11 +5,14 @@ import { isValidContractGroup } from '../../utils/validators'
 const CMD = 'abi'
 
 function addGetAbiCmd(cmd) {
-    cmd.command(CMD).argument('group', 'Contract group to get the ABI for').action(getAbi)
+    cmd.command(CMD)
+        .description('Get the ABI for a Contract Group')
+        .argument('group', 'Contract group to get the ABI for')
+        .action(getAbi)
 }
 
 /**
- * Get the ABI for a contract group.
+ * Get the ABI for a Contract Group.
  */
 async function getAbi(group: string) {
     // Validate contract group structure (e.g. "nsp.ContractName")
