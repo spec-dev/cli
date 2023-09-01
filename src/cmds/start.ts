@@ -19,6 +19,7 @@ const CMD = 'start'
 function addStartCmd(program) {
     program
         .command(CMD)
+        .description('Run the Spec client locally')
         .option('--url <type>', 'Run Spec against a specific Postgres url.')
         .action(start)
 }

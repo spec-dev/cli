@@ -1,56 +1,33 @@
-import { getSessionToken } from '../../utils/auth'
-import { log, logFailure } from '../../logger'
-import msg from '../../utils/msg'
+import { log, logFailure, logWarning } from '../../logger'
 import { client } from '../../api/client'
-import { chainIdsSet } from '../../utils/chains'
+import { isValidContractGroup } from '../../utils/validators'
 
 const CMD = 'abi'
 
-function addGetABICmd(cmd) {
+function addGetAbiCmd(cmd) {
     cmd.command(CMD)
+        .description('Get the ABI for a Contract Group')
         .argument('group', 'Contract group to get the ABI for')
-        .requiredOption('--chain <chain>', 'Chain id of target blockchain')
-        .action(getABI)
+        .action(getAbi)
 }
 
 /**
- * Get ABI from redis server
+ * Get the ABI for a Contract Group.
  */
-async function getABI(
-    group: string,
-    opts: {
-        chain: string
+async function getAbi(group: string) {
+    // Validate contract group structure (e.g. "nsp.ContractName")
+    if (!isValidContractGroup(group)) {
+        logWarning(`Invalid contract group "${group}. Make sure it's in "nsp.ContractName" format.`)
+        return
     }
-) {
-    // Get authed user's session token (if any).
-    const { token: sessionToken, error } = getSessionToken()
+
+    const { error, abi } = await client.getAbi(group)
     if (error) {
-        logFailure(error)
-        return
-    }
-    if (!sessionToken) {
-        log(msg.AUTH_REQUIRED_MESSAGE)
-        return
-    }
-
-    const { isValid } = validateOptions(group, opts.chain)
-    if (!isValid) return
-
-    const { error: getABIError, abi } = await client.getABI(sessionToken, opts.chain, group)
-    if (getABIError) {
-        logFailure(`ABI retreival failed: ${getABIError}`)
+        logFailure(`ABI retreival failed: ${error}`)
         return
     }
 
     log(abi)
 }
 
-function validateOptions(group: string, chain: string) {
-    if (!chainIdsSet.has(chain)) {
-        logFailure(`Invalid chain id ${chain}`)
-        return { isValid: false }
-    }
-    return { group, chain, isValid: true }
-}
-
-export default addGetABICmd
+export default addGetAbiCmd

@@ -13,27 +13,25 @@ import addLoginCmd from './cmds/login'
 import addLogsCmd from './cmds/logs'
 import addOpenCmd from './cmds/open'
 import addStartCmd from './cmds/start'
-import addUpdateCmd from './cmds/update'
 import addVersionCmd from './cmds/version'
 import addGetCmd from './cmds/get'
 import addLogoutCmd from './cmds/logout'
 
 addAddCmd(program)
 addCreateCmd(program)
+addGetCmd(program)
+addNewCmd(program)
+addTestCmd(program)
 addDBCmd(program)
 addLinkCmd(program)
-addNewCmd(program)
-addShowCmd(program)
-addTestCmd(program)
 addUseCmd(program)
+addShowCmd(program)
 addInitCmd(program)
 addLoginCmd(program)
+addLogoutCmd(program)
 addLogsCmd(program)
 addOpenCmd(program)
 addStartCmd(program)
-addUpdateCmd(program)
 addVersionCmd(program)
-addGetCmd(program)
-addLogoutCmd(program)
 
 program.parse()

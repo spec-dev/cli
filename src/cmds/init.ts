@@ -9,7 +9,7 @@ import fs from 'fs'
 const CMD = 'init'
 
 function addInitCmd(program) {
-    program.command(CMD).action(init)
+    program.command(CMD).description('Initialize a new Spec project').action(init)
 }
 
 /**

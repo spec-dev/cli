@@ -6,7 +6,7 @@ import { persistSession } from '../utils/auth'
 const CMD = 'login'
 
 function addLoginCmd(program) {
-    program.command(CMD).action(login)
+    program.command(CMD).description('Log in to your Spec account').action(login)
 }
 
 /**

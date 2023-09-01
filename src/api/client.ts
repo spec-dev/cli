@@ -6,7 +6,7 @@ import {
     LoginResponse,
     RegisterContractsResponse,
     GetContractRegistrationJobResponse,
-    GetABIResponse,
+    GetAbiResponse,
     CreateContractGroupResponse,
     GetContractGroupResponse,
     GetContractGroupEventsResponse,
@@ -74,21 +74,9 @@ async function logs(projectId: string, sessionToken: string, tail: number, env?:
     return { data: resp.body }
 }
 
-async function getABI(
-    sessionToken: string,
-    chainId: string,
-    group: string
-): Promise<GetABIResponse> {
-    const { data: resp, error } = await get(
-        buildUrl(routes.GET_ABI),
-        { chainId, group },
-        formatAuthHeader(sessionToken),
-        false
-    )
-    if (error) return { error }
-
-    // format ABI when returned
-    return { abi: JSON.stringify(resp.abi, null, 4) }
+async function getAbi(group: string): Promise<GetAbiResponse> {
+    const { data: resp, error } = await get(buildUrl(routes.GET_ABI), { group }, {}, false)
+    return error ? { error } : { abi: resp.abi ? JSON.stringify(resp.abi, null, 4) : '' }
 }
 
 async function registerContracts(
@@ -174,7 +162,7 @@ export const client = {
     login,
     getProject,
     logs,
-    getABI,
+    getAbi,
     registerContracts,
     getContractRegistrationJob,
     createContractGroup,

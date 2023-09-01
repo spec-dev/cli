@@ -3,7 +3,7 @@ import constants from '../../constants'
 import { ensureDenoInstalled, testLiveObject } from '../../utils/deno'
 import msg from '../../utils/msg'
 import { toNumber, toDate } from '../../utils/formatters'
-import { psqlInstalled, upsertSharedTablesDB } from '../../db'
+import { psqlInstalled, upsertLiveObjectTestingDB } from '../../db'
 import { getProjectCreds, getCurrentProjectId } from '../../config/global'
 import { chainIdsSet } from '../../utils/chains'
 import { addDays, subtractDays } from '../../utils/date'
@@ -14,6 +14,7 @@ const CMD = 'object'
 function addObjectCommand(cmd) {
     cmd.command(CMD)
         .alias('objects')
+        .description('Test one or more Live Objects')
         .argument('name', 'Name of Live Object to test')
         .option('--recent', 'Test on the previous 30 days of data')
         .option('--days <type>', 'Number of days to fetch test data for')
@@ -23,16 +24,16 @@ function addObjectCommand(cmd) {
         .option('--to-block <type>', 'End block of the block range to fetch test data for')
         .option(
             '--all-time',
-            'Test over the entire date-range of input data used by the live object(s)'
+            'Test over the entire date-range of input data used by the Live Object(s)'
         )
         .option('--chains <type>', 'Chain ids to fetch test data for')
-        .option('--keep-data', 'Whether to keep your existing live object data')
+        .option('--keep-data', 'Whether to keep your existing Live Object data')
         .option('--port <type>', 'Port to run the Live Object testing server on')
         .action(testObject)
 }
 
 /**
- * Test a Live Object locally.
+ * Test one or more Live Objects.
  */
 async function testObject(name, opts) {
     const { options, isValid } = validateOptions(opts || {})
@@ -51,10 +52,10 @@ async function testObject(name, opts) {
         return
     }
 
-    // Ensure the "shared-tables" database exists locally.
-    const { error: sharedTablesDbError } = upsertSharedTablesDB()
-    if (sharedTablesDbError) {
-        logFailure(`Failed to upsert the "shared-tables" database locally: ${sharedTablesDbError}`)
+    // Ensure the live object testing database exists locally.
+    const { error: dbError } = upsertLiveObjectTestingDB()
+    if (dbError) {
+        logFailure(`Failed to upsert the live object testing database locally: ${dbError}`)
         return
     }
 
@@ -187,7 +188,7 @@ function validateOptions(options: StringKeyMap): StringKeyMap {
         chains: chainIds.join(','),
         allTime: !!allTime,
         keepData: !!keepData,
-        port: toNumber(options.port) || constants.LOCAL_SHARED_TABLES_API_PORT,
+        port: toNumber(options.port) || constants.LIVE_OBJECT_TESTING_API_PORT,
     }
 
     return { options: opts, isValid: true }

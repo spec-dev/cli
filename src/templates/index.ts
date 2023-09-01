@@ -13,9 +13,7 @@ export function createLiveObjectTemplate(
     name: string,
     chains: string[],
     displayName?: string,
-    description?: string,
-    inputEvents?: string[],
-    inputCalls?: string[]
+    description?: string
 ): StringKeyMap {
     const cwd = process.cwd()
     upsertReadme(cwd)
@@ -23,14 +21,5 @@ export function createLiveObjectTemplate(
     upsertVsCodeSettings(cwd)
     upsertDenoConfig(cwd)
     upsertDenoImports(cwd)
-    return upsertLiveObject(
-        cwd,
-        namespace,
-        name,
-        chains,
-        displayName,
-        description,
-        inputEvents,
-        inputCalls
-    )
+    return upsertLiveObject(cwd, namespace, name, chains, displayName, description)
 }

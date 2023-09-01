@@ -12,7 +12,7 @@ import {
     TableSpec,
     ColumnSpec,
     BigInt,
-} from 'https://esm.sh/@spec.dev/core@0.0.91'
+} from 'https://esm.sh/@spec.dev/core@0.0.108'
 import { createEventClient, SpecEventClient } from 'https://esm.sh/@spec.dev/event-client@0.0.16'
 import {
     buildSelectQuery,
@@ -20,7 +20,7 @@ import {
     QueryPayload,
     ident,
     literal,
-} from 'https://esm.sh/@spec.dev/qb@0.0.2'
+} from 'https://esm.sh/@spec.dev/qb@0.0.4'
 import short from 'https://esm.sh/short-uuid@4.2.0'
 
 const chainNamespaces = {
@@ -54,12 +54,11 @@ const routes = {
     GENERATE_TEST_INPUTS: 'live-object-version/generate-test-inputs',
     RESOLVE_EVENT_VERSIONS: 'event-versions/resolve',
     RESOLVE_CALL_VERSIONS: 'call-versions/resolve',
+    GET_CONTRACT_GROUP_ABI: 'abi',
 }
 
 const REQUEST_TIMEOUT = 30000
 const AUTH_HEADER_NAME = 'Spec-Auth-Token'
-
-const MAX_TX_ENTRIES = 10
 
 const CONTRACTS_EVENT_NSP = 'contracts'
 
@@ -252,6 +251,14 @@ function toNumber(val: any): number | null {
     return Number.isNaN(num) ? null : num
 }
 
+function abbrevEventWithVersion(fullEventName: string): string {
+    const [nspName, version] = fullEventName.split('@')
+    if (!version || version.length <= 10) {
+        return fullEventName
+    }
+    return `${nspName}@${version.slice(0, 10)}...`
+}
+
 function parseOptions(): StringKeyMap {
     const values = Deno.args.slice(3) || []
     const options = {
@@ -331,6 +338,22 @@ async function getLiveObjectsInGivenPath(folder: string, liveObjects: StringKeyM
     }
 }
 
+function getUniqueContractGroupsForLiveObject(liveObject: LiveObject): string[] {
+    const givenInputNames = [
+        ...Object.keys(liveObject._eventHandlers || {}),
+        ...Object.keys(liveObject._callHandlers || {}),
+    ]
+    const groups = new Set<string>()
+    for (const givenName of givenInputNames) {
+        const withoutVersion = givenName.includes('@') ? givenName.split('@')[0] : givenName
+        const comps = withoutVersion.split('.')
+        const l = comps.length
+        if (l < 3) continue
+        groups.add([comps[l - 3], comps[l - 2]].join('.'))
+    }
+    return Array.from(groups)
+}
+
 async function buildLiveObjectsMap(
     liveObjects: StringKeyMap[],
     apiKey: string
@@ -340,6 +363,7 @@ async function buildLiveObjectsMap(
         const LiveObjectClass = await importLiveObject(specFilePath)
         const liveObjectInstance = new LiveObjectClass()
         const chainNsps = await getLiveObjectChainNamespaces(specFilePath)
+        const resolvesMetadata = await doesLiveObjectResolveMetadata(specFilePath)
 
         const inputEventNames = await resolveInputsForLiveObject(
             liveObjectInstance._eventHandlers,
@@ -359,6 +383,19 @@ async function buildLiveObjectsMap(
         )
         if (inputCallNames === null) return null
 
+        const contractGroups = getUniqueContractGroupsForLiveObject(liveObjectInstance)
+        const abiResponses = await Promise.all(contractGroups.map(getContractGroupAbi))
+        const inputContractGroupAbis = {}
+        for (let i = 0; i < contractGroups.length; i++) {
+            const group = contractGroups[i]
+            const { data, error } = abiResponses[i]
+            if (error) {
+                console.error(chalk.yellow(error))
+                return null
+            }
+            inputContractGroupAbis[group] = data.abi
+        }
+
         liveObjectsMap[specFilePath] = {
             name,
             specFilePath,
@@ -366,6 +403,8 @@ async function buildLiveObjectsMap(
             liveObjectInstance,
             inputEventNames,
             inputCallNames,
+            inputContractGroupAbis,
+            resolvesMetadata,
         }
     }
     return liveObjectsMap
@@ -395,6 +434,11 @@ async function readManifest(liveObjectSpecPath: string): Promise<StringKeyMap> {
     let splitSpecConfigDirPath = liveObjectSpecPath.split('/')
     splitSpecConfigDirPath.pop()
     return await readJsonFile(`${splitSpecConfigDirPath.join('/')}/${liveObjectFileNames.MANIFEST}`)
+}
+
+async function doesLiveObjectResolveMetadata(path: string): Promise<boolean> {
+    const liveObjectCode = await readTextFile(path)
+    return liveObjectCode.includes(` resolveMetadata(`)
 }
 
 function createInputEventsMap(liveObjectsMap: StringKeyMap): StringKeyMap {
@@ -453,11 +497,6 @@ function getTxPayload(payload: StringKeyMap[]): [StringKeyMap[], boolean] {
         return [payload, false]
     }
 
-    if (payload.length > MAX_TX_ENTRIES) {
-        console.error(`Tx got more than max allowed entries`, payload.length)
-        return [payload, false]
-    }
-
     const queries = []
     for (const entry of payload) {
         const [query, isValid] = getQueryPayload(entry)
@@ -481,13 +520,15 @@ function buildQueryFromPayload(payload: StringKeyMap): QueryPayload | null {
     if (
         payload.data &&
         payload.hasOwnProperty('conflictColumns') &&
-        payload.hasOwnProperty('updateColumns')
+        payload.hasOwnProperty('updateColumns') &&
+        payload.hasOwnProperty('primaryTimestampColumn')
     ) {
         return buildUpsertQuery(
             table,
             payload.data,
             payload.conflictColumns || [],
             payload.updateColumns || [],
+            payload.primaryTimestampColumn,
             payload.returning
         )
     }
@@ -508,6 +549,8 @@ async function resolveInputsForLiveObject(
     apiKey: string
 ): Promise<string[] | null> {
     const inputNames = []
+    const uniqueChainAgnosticInputs: StringKeyMap = {}
+
     for (const givenName in registeredHandlers) {
         let fullName = givenName
 
@@ -519,11 +562,13 @@ async function resolveInputsForLiveObject(
         // Subscribe to inputs on all chains the live object
         // is associated with if chain is not specified.
         if (fullName.startsWith(`${CONTRACTS_EVENT_NSP}.`)) {
+            uniqueChainAgnosticInputs['.' + fullName.split('.').slice(1).join('.')] = givenName
             for (const nsp of chainNsps) {
                 inputNames.push([nsp, fullName].join('.'))
             }
         } else {
             inputNames.push(fullName)
+            uniqueChainAgnosticInputs[fullName] = givenName
         }
     }
     if (!inputNames.length) return []
@@ -534,10 +579,19 @@ async function resolveInputsForLiveObject(
         return null
     }
 
-    for (const fullName of inputNames) {
-        if (!inputVersionsMap[fullName]) {
+    // Ensure each input is registered with at least 1 chain.
+    const resolvedEventVersionNames = Object.values(inputVersionsMap) as string[]
+    for (const [maybePartialName, givenName] of Object.entries(uniqueChainAgnosticInputs)) {
+        let found = false
+        for (const resolvedName of resolvedEventVersionNames) {
+            if (resolvedName.includes(maybePartialName)) {
+                found = true
+                break
+            }
+        }
+        if (!found) {
             console.error(
-                chalk.yellow(`No registered ${subject} on Spec was found for "${fullName}"`)
+                chalk.yellow(`No ${subject} is currently registered that matches "${givenName}"`)
             )
             return null
         }
@@ -590,10 +644,42 @@ async function resolveInputVersions(
     return { data, error }
 }
 
+async function getContractGroupAbi(group: string): Promise<StringKeyMap> {
+    const origin = Deno.args[2]
+    const url = `${path.join(origin, routes.GET_CONTRACT_GROUP_ABI)}?group=${group}`
+
+    const abortController = new AbortController()
+    const timer = setTimeout(() => abortController.abort(), REQUEST_TIMEOUT)
+
+    let resp, error
+    try {
+        resp = await fetch(url, {
+            signal: abortController.signal,
+        })
+    } catch (err) {
+        error = `Unexpected error getting ABI for contract group ${group}: ${stringify(err)}`
+    }
+    clearTimeout(timer)
+    if (error) return { error }
+
+    let data: any = {}
+    try {
+        data = (await resp.json()) || {}
+    } catch (err) {
+        error = `Error parsing JSON response: ${err}`
+    }
+
+    if (!error && data?.error) {
+        error = data.error
+    }
+
+    return { data, error }
+}
+
 async function getColumnsWithAttrs(schemaName: string, tableName: string): Promise<ColumnSpec[]> {
     const query = {
-        sql: `select column_name as name, data_type as type, is_nullable as nullable, column_default as "default" from information_schema.columns where table_schema = $1 and table_name in ($2, $3)`,
-        bindings: [schemaName, tableName, `"${tableName}"`],
+        sql: `select column_name as name, data_type as type, is_nullable as nullable, column_default as "default" from information_schema.columns where table_schema in ($1, $2) and table_name in ($3, $4)`,
+        bindings: [schemaName, `"${schemaName}"`, tableName, `"${tableName}"`],
     }
 
     let rows = []
@@ -642,8 +728,8 @@ async function upsertSchema(schemaName: string) {
 
 async function doesSchemaExist(name: string): Promise<boolean> {
     const query = {
-        sql: `select count(*) from information_schema.schemata where schema_name = $1`,
-        bindings: [name],
+        sql: `select count(*) from information_schema.schemata where schema_name in ($1, $2)`,
+        bindings: [name, `"${name}"`],
     }
     let rows = []
     try {
@@ -657,8 +743,8 @@ async function doesSchemaExist(name: string): Promise<boolean> {
 
 async function doesTableExist(schemaName: string, tableName: string): Promise<boolean> {
     const query = {
-        sql: `select count(*) from pg_tables where schemaname = $1 and tablename in ($2, $3)`,
-        bindings: [schemaName, tableName, `"${tableName}"`],
+        sql: `select count(*) from pg_tables where schemaname in ($1, $2) and tablename in ($3, $4)`,
+        bindings: [schemaName, `"${schemaName}"`, tableName, `"${tableName}"`],
     }
     let rows = []
     try {
@@ -680,14 +766,16 @@ export async function getConstraints(schemaName: string, tableName: string): Pro
             join pg_namespace n 
                 ON n.oid = c.connamespace 
             where contype IN ('p', 'u')
-            and n.nspname = $1
-            and conrelid::regclass::text in ($2, $3, $4, $5, $6)`,
+            and n.nspname in ($1, $2)
+            and conrelid::regclass::text in ($3, $4, $5, $6, $7, $8)`,
         bindings: [
             schemaName,
+            `"${schemaName}"`,
             tableName,
             `"${tableName}"`,
             `${schemaName}.${tableName}`,
             `"${schemaName}"."${tableName}"`,
+            `"${schemaName}".${tableName}`,
             `${schemaName}."${tableName}"`,
         ],
     })
@@ -701,9 +789,9 @@ export async function getConstraints(schemaName: string, tableName: string): Pro
                 indexname as conname,
                 indexdef as constraint
             from pg_indexes 
-            where schemaname = $1 
-            and tablename in ($2, $3)`,
-        bindings: [schemaName, tableName, `"${tableName}"`],
+            where schemaname in ($1, $2)
+            and tablename in ($3, $4)`,
+        bindings: [schemaName, `"${schemaName}"`, tableName, `"${tableName}"`],
     })
 
     const indexes = []
@@ -1020,15 +1108,16 @@ async function performTableChanges(newTableSpec: TableSpec, diffs: StringKeyMap)
 
     // Alter column defaults.
     txStatements.push(
-        ...defaultsChanged.map(({ name, newValue }) => {
+        ...defaultsChanged.map(({ name, currentValue, newValue }) => {
             let suffix
             if (newValue === null) {
                 suffix = 'drop default'
                 console.log(chalk.magenta(`Removing default value for column "${name}"`))
             } else {
-                console.log(
-                    chalk.magenta(`Setting default value for column "${name}" to ${newValue}`)
-                )
+                currentValue === null &&
+                    console.log(
+                        chalk.magenta(`Setting default value for column "${name}" to ${newValue}`)
+                    )
                 suffix = newValue.includes('(')
                     ? `set default ${newValue}`
                     : `set default ${literal(newValue)}`
@@ -1185,12 +1274,14 @@ function subscribeToEventsAndCalls(
                     event,
                     liveObject.name,
                     liveObject.LiveObjectClass,
+                    liveObject.inputContractGroupAbis,
                     apiKey,
                     'handleEvent'
                 )
             }
         })
-        console.log(chalk.green(`Subscribed to event ${eventName}`))
+
+        console.log(chalk.green(`Subscribed to event ${abbrevEventWithVersion(eventName)}`))
     }
 
     // Subsribe to all input calls.
@@ -1207,7 +1298,14 @@ function subscribeToEventsAndCalls(
             for (const specFilePath of inputCallsMap[call.name] || []) {
                 const liveObject = liveObjectsMap[specFilePath]
                 if (!liveObject) continue
-                handleInput(call, liveObject.name, liveObject.LiveObjectClass, apiKey, 'handleCall')
+                handleInput(
+                    call,
+                    liveObject.name,
+                    liveObject.LiveObjectClass,
+                    liveObject.inputContractGroupAbis,
+                    apiKey,
+                    'handleCall'
+                )
             }
         })
         console.log(chalk.green(`Subscribed to call ${callName}`))
@@ -1218,6 +1316,7 @@ async function handleInput(
     input: Event | Call,
     liveObjectName: string,
     TargetLiveObject: LiveObject,
+    inputContractGroupAbis: StringKeyMap,
     apiKey: string,
     handler: string,
     log: boolean = true
@@ -1229,7 +1328,11 @@ async function handleInput(
     // published events and any newly registered contracts.
     const publishedEventQueue = new Queue()
     const contractRegistrationQueue = new Queue()
-    const liveObject = new TargetLiveObject(publishedEventQueue, contractRegistrationQueue)
+    const liveObject = new TargetLiveObject(
+        inputContractGroupAbis,
+        publishedEventQueue,
+        contractRegistrationQueue
+    )
     liveObject._tablesApiToken = apiKey
 
     // Handle the event or call and auto-save.
@@ -1510,22 +1613,40 @@ async function processTestDataInputs(
         inputsBreakdown[input.name] = (inputsBreakdown[input.name] || 0) + 1
     }
 
-    const maxInputNameLength = Math.max(...Object.keys(inputsBreakdown).map((n) => n.length))
+    const maxInputNameLength = Math.max(
+        ...Object.keys(inputsBreakdown)
+            .map(abbrevEventWithVersion)
+            .map((n) => n.length)
+    )
     for (const name in inputsBreakdown) {
         console.log(
-            `${chalk.gray('--')} ${padToLength(name, maxInputNameLength)}  ${chalk.green(
-                inputsBreakdown[name].toLocaleString()
-            )}`
+            `${chalk.gray('--')} ${padToLength(
+                abbrevEventWithVersion(name),
+                maxInputNameLength
+            )}  ${chalk.green(inputsBreakdown[name].toLocaleString())}`
         )
+    }
+
+    const resolvesMetadata = !!Object.values(liveObjectsMap).find(
+        (entry) => !!(entry as StringKeyMap).resolvesMetadata
+    )
+    if (resolvesMetadata && inputs.length) {
+        console.log(chalk.green(`   ...and resolving metadata...`))
     }
 
     let numOutputEvents = 0
     const newContracts = []
     const outputsBreakdown = {}
+    let i = 0
     for (const input of inputs) {
+        i++
         const isCall = input?.hasOwnProperty('inputs')
         const inputsMap = isCall ? inputCallsMap : inputEventsMap
         const handler = isCall ? 'handleCall' : 'handleEvent'
+
+        if (resolvesMetadata) {
+            console.log(chalk.dim(`   ${i} / ${chalk.green(inputs.length)}`))
+        }
 
         for (const specFilePath of inputsMap[input.name] || []) {
             const liveObject = liveObjectsMap[specFilePath]
@@ -1538,6 +1659,7 @@ async function processTestDataInputs(
                 input,
                 liveObject.name,
                 liveObject.LiveObjectClass,
+                liveObject.inputContractGroupAbis,
                 apiKey,
                 handler,
                 false
@@ -1643,13 +1765,16 @@ async function streamTestData(
 
     console.log(chalk.green(`Final inputs breakdown:`))
     const maxInputNameLength = Math.max(
-        ...Object.keys(aggregateInputsBreakdown).map((n) => n.length)
+        ...Object.keys(aggregateInputsBreakdown)
+            .map(abbrevEventWithVersion)
+            .map((n) => n.length)
     )
     for (const name in aggregateInputsBreakdown) {
         console.log(
-            `${chalk.gray('--')} ${padToLength(name, maxInputNameLength)}  ${chalk.green(
-                aggregateInputsBreakdown[name].toLocaleString()
-            )}`
+            `${chalk.gray('--')} ${padToLength(
+                abbrevEventWithVersion(name),
+                maxInputNameLength
+            )}  ${chalk.green(aggregateInputsBreakdown[name].toLocaleString())}`
         )
     }
 

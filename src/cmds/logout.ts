@@ -4,7 +4,7 @@ import { deleteSession } from '../utils/auth'
 const CMD = 'logout'
 
 function addLogoutCmd(program) {
-    program.command(CMD).action(logout)
+    program.command(CMD).description('Log out of your Spec account').action(logout)
 }
 
 /**

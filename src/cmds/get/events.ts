@@ -8,12 +8,15 @@ const CMD = 'events'
 
 function addGetEventsCmd(cmd) {
     cmd.command(CMD)
-        .requiredOption('-g, --group <group>', 'Contract group to get events for')
+        .description('List the events in a Contract Group')
+        .argument('group', 'Contract group to get events for')
         .action(getContractGroupEvents)
 }
 
-async function getContractGroupEvents(opts: { group: string }) {
-    const { group } = opts
+/**
+ * List the events in a Contract Group.
+ */
+async function getContractGroupEvents(group: string) {
     if (!isValidContractGroup(group)) {
         logWarning(`Invalid contract group "${group}". Make sure it's in "nsp.GroupName" format.`)
         return
