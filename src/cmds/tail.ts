@@ -35,7 +35,7 @@ async function tail(event: string) {
         return
     }
 
-    latestEvent && log(JSON.stringify(trimEventData(latestEvent), null, 4))
+    latestEvent && log(trimEventData(latestEvent))
 
     const nonceForEventName = {}
     for (const entry of cursors) {
@@ -70,7 +70,7 @@ async function tail(event: string) {
                 (a, b) => new Date(a.origin.blockTimestamp) - new Date(b.origin.blockTimestamp)
             )
             .forEach((event) => {
-                log(JSON.stringify(trimEventData(event), null, 4))
+                log(trimEventData(event))
             })
     }
 }
