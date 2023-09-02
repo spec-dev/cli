@@ -20,10 +20,15 @@ export function isValidContractGroup(group: string): boolean {
 }
 
 export function couldBeEventName(value: string): boolean {
-    let nameSection = value || ''
-    if (nameSection.includes('@')) {
-        nameSection = nameSection.split('@')[0]
+    value = value || ''
+    if (value.includes('@')) {
+        const splitValue = value.split('@')
+        if (splitValue.length > 2) return false
+        value = splitValue[0]
     }
-    const nameSectionComps = nameSection.split('.').filter((v) => !!v)
-    return nameSectionComps.length >= 2
+    const sections = value.split('.').filter((v) => !!v)
+    const numSections = sections.length
+    return (
+        numSections === 2 || numSections === 3 || (numSections === 5 && sections[1] === 'contracts')
+    )
 }

@@ -16,10 +16,12 @@ import addStartCmd from './cmds/start'
 import addVersionCmd from './cmds/version'
 import addGetCmd from './cmds/get'
 import addLogoutCmd from './cmds/logout'
+import addTailCmd from './cmds/tail'
 
 addAddCmd(program)
 addCreateCmd(program)
 addGetCmd(program)
+addTailCmd(program)
 addNewCmd(program)
 addTestCmd(program)
 addDBCmd(program)

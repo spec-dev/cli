@@ -63,9 +63,15 @@ export interface GetContractGroupEventsResponse {
     events?: StringKeyMap[]
 }
 
-export interface GetContractGroupSampleEventResponse {
+export interface ResolveEventVersionCursorsResponse {
     error?: string
-    event?: StringKeyMap
+    cursors?: StringKeyMap[]
+    latestEvent?: StringKeyMap
+}
+
+export interface ResolveEventVersionDataAfterResponse {
+    error?: string
+    events?: StringKeyMap
 }
 
 export enum ContractRegistrationJobStatus {

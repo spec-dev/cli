@@ -1,4 +1,4 @@
-import { AnyMap } from '../types'
+import { AnyMap, StringKeyMap } from '../types'
 
 export function removeTrailingSlash(str: string): string {
     return str.replace(/\/+$/, '')
