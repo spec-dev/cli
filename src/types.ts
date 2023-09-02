@@ -63,6 +63,17 @@ export interface GetContractGroupEventsResponse {
     events?: StringKeyMap[]
 }
 
+export interface ResolveEventVersionCursorsResponse {
+    error?: string
+    cursors?: StringKeyMap[]
+    latestEvent?: StringKeyMap
+}
+
+export interface ResolveEventVersionDataAfterResponse {
+    error?: string
+    events?: StringKeyMap
+}
+
 export enum ContractRegistrationJobStatus {
     Created = 'created',
     Decoding = 'decoding',

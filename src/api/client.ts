@@ -10,6 +10,8 @@ import {
     CreateContractGroupResponse,
     GetContractGroupResponse,
     GetContractGroupEventsResponse,
+    ResolveEventVersionCursorsResponse,
+    ResolveEventVersionDataAfterResponse,
     StringMap,
     StringKeyMap,
 } from '../types'
@@ -143,8 +145,23 @@ async function getContractGroupEvents(group: string): Promise<GetContractGroupEv
     const { error, data } = await get(buildUrl(routes.GET_CONTRACT_GROUP_EVENTS), {
         group,
     })
-
     return error ? { error } : { events: data?.events || [] }
+}
+
+async function resolveEventVersionCursors(
+    givenName: string
+): Promise<ResolveEventVersionCursorsResponse> {
+    const { error, data } = await post(buildUrl(routes.RESOLVE_EVENT_VERSION_CURSORS), {
+        givenName,
+    })
+    return error ? { error } : { cursors: data?.cursors || [], latestEvent: data?.latestEvent }
+}
+
+async function getEventVersionDataAfter(
+    cursors: StringKeyMap
+): Promise<ResolveEventVersionDataAfterResponse> {
+    const { error, data } = await post(buildUrl(routes.GET_EVENT_VERSION_DATA_AFTER), { cursors })
+    return error ? { error } : { events: data?.events || {} }
 }
 
 export const client = {
@@ -157,4 +174,6 @@ export const client = {
     createContractGroup,
     getContractGroup,
     getContractGroupEvents,
+    resolveEventVersionCursors,
+    getEventVersionDataAfter,
 }

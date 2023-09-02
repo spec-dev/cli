@@ -16,6 +16,7 @@ import addStartCmd from './cmds/start'
 import addVersionCmd from './cmds/version'
 import addGetCmd from './cmds/get'
 import addLogoutCmd from './cmds/logout'
+import addTailCmd from './cmds/tail'
 
 addAddCmd(program)
 addCreateCmd(program)
@@ -32,6 +33,7 @@ addLogoutCmd(program)
 addLogsCmd(program)
 addOpenCmd(program)
 addStartCmd(program)
+addTailCmd(program)
 addVersionCmd(program)
 
 program.parse()
