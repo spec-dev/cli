@@ -25,7 +25,8 @@ export const trimEventData = (event: StringKeyMap): StringKeyMap => {
         }
     }
 
-    if (event.name.split('.').length <= 2) {
+    const [nspName, _] = event.name.split('@')
+    if (nspName.split('.').length <= 2) {
         return {
             id: event.id,
             name: event.name,
