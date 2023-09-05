@@ -168,8 +168,7 @@ export async function promptCreateContractGroupDetails(
         isFactory = (await prompts(IS_FACTORY_PROMPT)).value
     }
 
-    // return { group, chainIds, abi, isFactory }
-    return { group, chainIds, isFactory }
+    return { group, chainIds, abi, isFactory }
 }
 
 export async function promptAddContractsDetails(
