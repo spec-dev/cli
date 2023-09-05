@@ -4,7 +4,7 @@ import { logFailure, logSuccess } from '../../logger'
 const CMD = 'env'
 
 function addEnvCmd(cmd) {
-    cmd.command(CMD).action(showEnv)
+    cmd.command(CMD).description('Show the current project environment').action(showEnv)
 }
 
 /**

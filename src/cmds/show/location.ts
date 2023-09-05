@@ -5,7 +5,7 @@ import msg from '../../utils/msg'
 const CMD = 'location'
 
 function addLocationCmd(cmd) {
-    cmd.command(CMD).action(showLocation)
+    cmd.command(CMD).description('Show the current project location').action(showLocation)
 }
 
 /**

@@ -7,11 +7,14 @@ import { initDatabase } from '../../db'
 const CMD = 'init'
 
 function addInitCmd(cmd) {
-    cmd.command(CMD).argument('url', 'Postgres database url to initialize').action(initDB)
+    cmd.command(CMD)
+        .description('Initialize a Postgres database to use Spec')
+        .argument('url', 'Database URL')
+        .action(initDB)
 }
 
 /**
- * Initialize a Postgres database for usage with Spec.
+ * Initialize a Postgres database to use Spec.
  */
 async function initDB(url) {
     // Ensure psql is installed.

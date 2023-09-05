@@ -5,11 +5,11 @@ import msg from '../../utils/msg'
 const CMD = 'project'
 
 function addProjectCmd(cmd) {
-    cmd.command(CMD).action(showProject)
+    cmd.command(CMD).description('Show the current project').action(showProject)
 }
 
 /**
- * Show which project has been set as the *current* project.
+ * Show the current project.
  */
 async function showProject() {
     // Get current project id.
