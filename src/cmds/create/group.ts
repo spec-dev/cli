@@ -5,7 +5,8 @@ import { client } from '../../api/client'
 import { chainIdsSet } from '../../utils/chains'
 import { isValidContractGroup } from '../../utils/validators'
 import { resolveAbi } from '../../utils/abi'
-import { promptCreateContractGroupDetails } from '../../utils/prompt'
+import { getFactoryEvent, promptCreateContractGroupDetails } from '../../utils/prompt'
+import chalk from 'chalk'
 
 const CMD = 'group'
 
@@ -14,6 +15,7 @@ function addCreateGroupCmd(cmd) {
         .argument('[group]', 'Name of the contract group in "nsp.ContractName" format', null)
         .option('--chains <chains>', `The chain ids of the group's future contracts`, null)
         .option('--abi <abi>', `Path to the group's ABI`, null)
+        .option('--isFactory <isFactory>', `Factory contract?`, null)
         .action(createGroup)
 }
 
@@ -25,6 +27,7 @@ async function createGroup(
     opts: {
         chains: string
         abi: string
+        isFactory: boolean
     }
 ) {
     // Get authed user's session token (if any).
@@ -39,7 +42,12 @@ async function createGroup(
     }
 
     // Prompt user for inputs if not given directly.
-    const promptResp = await promptCreateContractGroupDetails(group, opts.chains, opts.abi)
+    const promptResp = await promptCreateContractGroupDetails(
+        group,
+        opts.chains,
+        opts.abi,
+        opts.isFactory
+    )
 
     // Validate contract group structure (e.g. "nsp.ContractName")
     if (!isValidContractGroup(promptResp.group)) {
@@ -63,6 +71,22 @@ async function createGroup(
     if (invalidChainIds.length) {
         logWarning(`Invalid chain ids: ${invalidChainIds.join(', ')}`)
         return
+    }
+
+    // Get factory event details for factory group.
+    if (promptResp.isFactory) {
+        const [factoryEventId, addressProperty] = await getFactoryEvent(promptResp.group)
+        const [name, version] = factoryEventId?.split('@') || []
+
+        // Log factory event details (temp formatting).
+        log(`
+        ${chalk.cyanBright(contractName)} | Factory group
+        ${
+            factoryEventId
+                ? `${chalk.green(name.split('.')[2])}  |  ${chalk.gray(version)}
+        Address property: ${chalk.gray(addressProperty ? addressProperty : 'No property selected')}`
+                : chalk.gray('No factory event selected')
+        }`)
     }
 
     // Create empty contract group.

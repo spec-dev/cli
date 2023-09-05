@@ -12,6 +12,7 @@ import {
     GetContractGroupEventsResponse,
     StringMap,
     StringKeyMap,
+    SearchEventVersionsResponse,
 } from '../types'
 
 const formatAuthHeader = (sessionToken: string): StringMap => ({
@@ -147,6 +148,14 @@ async function getContractGroupEvents(group: string): Promise<GetContractGroupEv
     return error ? { error } : { events: data?.events || [] }
 }
 
+async function searchEventVersions(name: string): Promise<SearchEventVersionsResponse> {
+    const { error, data } = await get(buildUrl(routes.SEARCH_EVENT_VERSIONS), {
+        name,
+    })
+
+    return error ? { error } : { events: data || [] }
+}
+
 export const client = {
     login,
     getProject,
@@ -157,4 +166,5 @@ export const client = {
     createContractGroup,
     getContractGroup,
     getContractGroupEvents,
+    searchEventVersions,
 }
