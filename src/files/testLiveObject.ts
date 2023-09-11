@@ -8,11 +8,11 @@ import {
     StringKeyMap,
     Event,
     Call,
-    LiveObject,
+    LiveTable,
     TableSpec,
     ColumnSpec,
     BigInt,
-} from 'https://esm.sh/@spec.dev/core@0.0.108'
+} from 'https://esm.sh/@spec.dev/core@0.0.116'
 import { createEventClient, SpecEventClient } from 'https://esm.sh/@spec.dev/event-client@0.0.16'
 import {
     buildSelectQuery,
@@ -338,7 +338,7 @@ async function getLiveObjectsInGivenPath(folder: string, liveObjects: StringKeyM
     }
 }
 
-function getUniqueContractGroupsForLiveObject(liveObject: LiveObject): string[] {
+function getUniqueContractGroupsForLiveObject(liveObject: LiveTable): string[] {
     const givenInputNames = [
         ...Object.keys(liveObject._eventHandlers || {}),
         ...Object.keys(liveObject._callHandlers || {}),
@@ -1189,7 +1189,7 @@ async function performTableChanges(newTableSpec: TableSpec, diffs: StringKeyMap)
     }
 }
 
-async function upsertLiveObjectTable(liveObject: LiveObject): Promise<string> {
+async function upsertLiveObjectTable(liveObject: LiveTable): Promise<string> {
     // Get the new table spec for this Live Object.
     const newTableSpec = await liveObject.tableSpec()
     const { schemaName, tableName } = newTableSpec
@@ -1315,13 +1315,14 @@ function subscribeToEventsAndCalls(
 async function handleInput(
     input: Event | Call,
     liveObjectName: string,
-    TargetLiveObject: LiveObject,
+    TargetLiveObject: LiveTable,
     inputContractGroupAbis: StringKeyMap,
     apiKey: string,
     handler: string,
     log: boolean = true
 ) {
     input.origin.blockNumber = BigInt.from(input.origin.blockNumber)
+    input.origin.blockTimestamp = new Date(input.origin.blockTimestamp)
     const logPrefix = chalk.gray(`${liveObjectName} |`)
 
     // Create the Live Object with queues to capture

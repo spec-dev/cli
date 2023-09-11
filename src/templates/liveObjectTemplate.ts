@@ -2,7 +2,7 @@ import { createFileWithContents, fileExists, createDir } from '../utils/file'
 import path from 'path'
 import { logWarning } from '../logger'
 import { StringKeyMap } from '../types'
-import { toNamespacedVersion, capitalize } from '../utils/formatters'
+import { toNamespacedVersion } from '../utils/formatters'
 
 const DEFAULT_VERSION = '0.0.1'
 
@@ -40,7 +40,7 @@ const denoConfigContents = `{
 
 const denoImportsContents = `{
     "imports": {
-        "@spec.dev/core": "https://esm.sh/@spec.dev/core@0.0.108"
+        "@spec.dev/core": "https://esm.sh/@spec.dev/core@0.0.116"
     }
 }`
 
@@ -67,90 +67,27 @@ const manifestFileContents = (
         4
     )
 
-const buildEventHandlerContents = (inputEvents: string[], addOnAllEvents: boolean): string => {
-    let eventHandlers = inputEvents.length
-        ? ''
-        : `
-
-    @OnEvent('namespace.ContractName.EventName')
-    onSomeEvent(event: Event) {
-        this.someProperty = event.data.someProperty
-    }`
-
-    if (addOnAllEvents) {
-        eventHandlers += `
-
-    @OnAllEvents()
-    setCommonProperties(event: Event) {
-        // ...
-    }`
-    }
-
-    for (const inputEvent of inputEvents) {
-        const eventName = inputEvent.split('.').pop()
-        eventHandlers += `
-
-    @OnEvent('${inputEvent}')
-    on${eventName}(event: Event) {
-        // ...
-    }`
-    }
-    return eventHandlers
-}
-
-const buildCallHandlerContents = (inputCalls: string[], addOnAllCalls: boolean): string => {
-    let callHandlers = ''
-
-    if (addOnAllCalls) {
-        callHandlers += `
-
-    @OnAllCalls()
-    setCommonCallProperties(call: Call) {
-        // ...
-    }`
-    }
-
-    for (const inputCall of inputCalls) {
-        const callName = inputCall.split('.').pop()
-        callHandlers += `
-
-    @OnCall('${inputCall}')
-    on${capitalize(callName)}(call: Call) {
-        // ...
-    }`
-    }
-    return callHandlers
-}
-
 const specFileContents = (name: string, description?: string): string => {
-    const eventHandlers = buildEventHandlerContents([], false)
-    const callHandlers = buildCallHandlerContents([], false)
-    const imports = ['LiveObject', 'Spec', 'Property', 'Event', 'OnEvent', 'Address'].filter(
-        (v) => !!v
-    )
-
+    const imports = ['Spec', 'LiveObject', 'Property', 'Event', 'OnEvent', 'Address']
     let contents = `import { ${imports.join(', ')} } from '@spec.dev/core'
 
 /**
- * ${description || 'TODO'}
+ * ${description || 'TODO: ...'}
  */
 @Spec({ 
     uniqueBy: ['someProperty', 'chainId'] 
 })
 class ${name} extends LiveObject {
-    // TODO
+    // ...
     @Property()
     someProperty: Address
 
-    // ==== Event Handlers ===================${eventHandlers}`
-
-    if (callHandlers) {
-        contents += `
-
-    // ==== Call Handlers ===================${callHandlers}`
+    // ==== Event Handlers ===================
+    
+    @OnEvent('namespace.ContractName.EventName')
+    onSomeEvent(event: Event) {
+        this.someProperty = event.data.someProperty
     }
-
-    contents += `
 }
 
 export default ${name}`
