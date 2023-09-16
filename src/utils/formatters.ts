@@ -37,3 +37,8 @@ export const toDate = (val: any): Date | null => {
     const invalid = date.toString().toLowerCase() === 'invalid date'
     return invalid ? null : date
 }
+
+export const asPostgresUrl = (connParams: StringKeyMap): string => {
+    const { user, password, host, port, name } = connParams
+    return `postgres://${user}:${password}@${host}:${port}/${name}`
+}

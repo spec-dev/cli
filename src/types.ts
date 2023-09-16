@@ -95,5 +95,5 @@ export enum LogLevel {
 
 export interface Migration {
     name: string
-    version: string
+    version: number
 }

@@ -59,7 +59,6 @@ constants.SPEC_GLOBAL_PROJECTS_PATH = path.join(
     constants.SPEC_GLOBAL_PROJECTS_FILE_NAME
 )
 constants.SPEC_GLOBAL_COMPOSE_DIR = path.join(constants.SPEC_GLOBAL_DIR, 'compose')
-constants.SPEC_MIGRATIONS_DIR = path.join(constants.SPEC_CONFIG_DIR, constants.MIGRATIONS_DIR_NAME)
 constants.SPEC_HANDLERS_DIR = path.join(constants.SPEC_CONFIG_DIR, constants.HANDLERS_DIR_NAME)
 constants.SPEC_HOOKS_DIR = path.join(constants.SPEC_CONFIG_DIR, constants.HOOKS_DIR_NAME)
 

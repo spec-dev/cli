@@ -11,23 +11,19 @@ import { initDatabase, psqlInstalled } from '../db'
 import { specClientInstalled, startSpec } from '../utils/client'
 import msg from '../utils/msg'
 import constants from '../constants'
-import parsePostgresUrl from 'parse-database-url'
+import { migrate } from './migrate'
 import { fileExists } from '../utils/file'
 
 const CMD = 'start'
 
 function addStartCmd(program) {
-    program
-        .command(CMD)
-        .description('Run the Spec client locally')
-        .option('--url <type>', 'Run Spec against a specific Postgres url.')
-        .action(start)
+    program.command(CMD).description('Run the Spec client locally').action(start)
 }
 
 /**
  * Start Spec locally, connecting to your local Postgres database.
  */
-export async function start(options) {
+export async function start() {
     // Get the current project id.
     const { data: projectId, error } = getCurrentProjectId()
     if (error) {
@@ -84,18 +80,16 @@ export async function start(options) {
         logFailure(getDBConfigError)
         return
     }
-
-    // Override db config with given --url option if provided.
-    if (options.url) {
-        if (!options.url.startsWith('postgres')) {
-            logWarning(msg.MUST_BE_PG_URL)
-            return
-        }
-        dbConfig = parsePostgresUrl(options.url)
-        dbConfig.name = dbConfig.database
+    if (!dbConfig) {
+        logWarning(
+            `No environment named "${projectEnv}" inside ${constants.CONNECTION_CONFIG_FILE_NAME}.`
+        )
+        return
     }
-    if (!dbConfig?.name && !options.url) {
-        logWarning(msg.POPULATE_DB_CONN_CONFIG_MESSAGE)
+    if (!dbConfig.name) {
+        logWarning(
+            `No database "name" specified for the "${projectEnv}" environment in ${constants.CONNECTION_CONFIG_FILE_NAME}.`
+        )
         return
     }
 
@@ -112,10 +106,7 @@ export async function start(options) {
     }
 
     // Initialize database for usage with Spec.
-    const { newlyAssignedPassword, error: initDBError } = await initDatabase(
-        dbConfig.name,
-        options.url
-    )
+    const { newlyAssignedPassword, error: initDBError } = await initDatabase(dbConfig.name)
     if (initDBError) {
         logFailure(`Error initializing database: ${initDBError}`)
         return
@@ -124,6 +115,9 @@ export async function start(options) {
         dbConfig.user = constants.SPEC_DB_USER
         dbConfig.password = newlyAssignedPassword
     }
+
+    // Run any new table migrations.
+    if (!(await migrate({}, false))) return
 
     // Run the Spec client.
     const { error: startError } = await startSpec(projectId, specConfigDir, creds.apiKey, dbConfig)

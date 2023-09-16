@@ -1,11 +1,12 @@
 import { StringKeyMap } from '../types'
-import { execSync } from 'node:child_process'
+import { execSync, spawnSync, spawn } from 'node:child_process'
 import { log, logSuccess } from '../logger'
 import path from 'path'
 import { newPassword } from '../utils/pw'
 import constants from '../constants'
+// import { literal } from 'pg-format'
 
-export async function initDatabase(dbName: string, url: string | null): Promise<StringKeyMap> {
+export async function initDatabase(dbName: string, url?: string): Promise<StringKeyMap> {
     // Upsert the "spec" database user.
     const { newlyAssignedPassword, error: upsertError } = upsertSpecUser(url)
     if (upsertError) return { error: upsertError }
@@ -122,6 +123,77 @@ export function specSchemaTablesExist(dbName: string, url?: string): StringKeyMa
     return { data: specTablesExist }
 }
 
+export function getLatestMigrationVersion(url: string): StringKeyMap {
+    try {
+        const out = execSync(`psql ${url} -c "select version from spec.migrations"`)
+        const lines = out.toString().trim().split('\n')
+        if (lines.length <= 3) {
+            return { data: 0, rowExists: false }
+        }
+
+        const latestVersion =
+            lines
+                .slice(2, lines.length - 1)
+                .map((v) => parseInt(v))
+                .filter((v) => !Number.isNaN(v))
+                .sort((a, b) => b - a)[0] || 0
+
+        return { data: latestVersion, rowExists: true }
+    } catch (error) {
+        return { error }
+    }
+}
+
+export function updateLatestMigrationVersion(url: string, version: string): StringKeyMap {
+    try {
+        const literal = (v) => `'${v}'`
+        const { rowExists, error } = getLatestMigrationVersion(url)
+        if (error) return { error }
+
+        const cmd = rowExists
+            ? `update spec.migrations set version = ${literal(version)}`
+            : `insert into spec.migrations (version) values (${literal(
+                  version
+              )}) on conflict (version) do nothing`
+
+        execSync(`psql ${url} -c "${cmd}"`)
+
+        const { data: updatedVersion, error: checkError } = getLatestMigrationVersion(url)
+        if (checkError) return { error: checkError }
+
+        return { data: updatedVersion === parseInt(version) }
+    } catch (error) {
+        return { error }
+    }
+}
+
+export async function runSQLMigrationFileAgainstDB(filePath: string, url: string) {
+    return new Promise(async (res, _) => {
+        try {
+            const child = spawn('psql', [url, '-f', filePath])
+
+            child.stdout.setEncoding('utf8')
+            child.stdout.on('data', function (data) {
+                process.stdout.write(data.toString())
+            })
+
+            let success = true
+            child.stderr.setEncoding('utf8')
+            child.stderr.on('data', function (data) {
+                success = false
+                process.stdout.write(data.toString())
+            })
+
+            child.on('close', () => {
+                res(success)
+            })
+        } catch (error) {
+            console.log(error)
+            res(false)
+        }
+    })
+}
+
 export function psqlInstalled(): boolean {
     try {
         const out = execSync('which psql')
@@ -130,4 +202,27 @@ export function psqlInstalled(): boolean {
     } catch (error) {
         return false
     }
+}
+
+export function resolveDBConnectionParams(dbConfig: StringKeyMap): StringKeyMap {
+    let dbUser = dbConfig.user
+    if (!dbUser) {
+        const { data: user, error } = getCurrentDbUser()
+        if (error) return { error }
+        dbUser = user
+    }
+    if (!dbUser) {
+        return { error: `Database user not specified.` }
+    }
+    if (!dbConfig.name) {
+        return { error: `Database name not specified.` }
+    }
+    const connParams = {
+        user: dbUser,
+        password: dbConfig.password,
+        host: dbConfig.host || 'localhost',
+        port: Number(dbConfig.port || constants.DB_PORT),
+        name: dbConfig.name,
+    }
+    return { data: connParams }
 }

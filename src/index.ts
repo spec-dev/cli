@@ -17,6 +17,7 @@ import addVersionCmd from './cmds/version'
 import addGetCmd from './cmds/get'
 import addLogoutCmd from './cmds/logout'
 import addTailCmd from './cmds/tail'
+import addMigrateCmd from './cmds/migrate'
 
 addAddCmd(program)
 addCreateCmd(program)
@@ -24,6 +25,7 @@ addGetCmd(program)
 addNewCmd(program)
 addTestCmd(program)
 addDBCmd(program)
+addMigrateCmd(program)
 addLinkCmd(program)
 addUseCmd(program)
 addShowCmd(program)
