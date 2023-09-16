@@ -20,3 +20,4 @@ pids
 
 # Local testing.
 .spec/
+.spec/connect.toml

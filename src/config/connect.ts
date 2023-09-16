@@ -4,40 +4,33 @@ import toml from '@ltd/j-toml'
 import fs from 'fs'
 import path from 'path'
 import { StringKeyMap } from '../types'
-import parsePostgresUrl from 'parse-database-url'
+import { getCurrentDbUser } from '../db'
 
-const initialTemplate = (
-    name: string = '',
-    port: number = 5432,
-    host: string = 'localhost',
-    user: string = '',
-    password: string = ''
-) =>
+const initialTemplate = (user: string = '') =>
     `# Local database
 [local]
-name = '${name}'
-port = ${port}
-host = '${host}'
+name = ''
+port = 5432
+host = 'localhost'
 user = '${user}'
-password = '${password}'`
+password = ''`
 
-export const createSpecConnectionConfigFile = (specConfigDir?: string, defaultDbUrl?: string) => {
-    let contents = initialTemplate()
-    if (defaultDbUrl) {
-        const connParams = parsePostgresUrl(defaultDbUrl) || {}
-        const { database, host, port, user, password } = connParams
-        contents = initialTemplate(database, Number(port), host, user, password)
+export const createSpecConnectionConfigFile = (specConfigDir?: string) => {
+    let { data: user, error } = getCurrentDbUser()
+    if (error || !user) {
+        user = ''
     }
-    createFileWithContents(
-        path.join(
-            specConfigDir || constants.SPEC_CONFIG_DIR,
-            constants.CONNECTION_CONFIG_FILE_NAME
-        ),
-        contents
+    let contents = initialTemplate(user)
+
+    const filePath = path.join(
+        specConfigDir || constants.SPEC_CONFIG_DIR,
+        constants.CONNECTION_CONFIG_FILE_NAME
     )
+
+    fileExists(filePath) || createFileWithContents(filePath, contents)
 }
 
-export const specConnectionConfigFileExists = (): boolean =>
+export const localConnectConfigFileExists = (): boolean =>
     fileExists(constants.CONNECTION_CONFIG_PATH)
 
 export function getDBConfig(projectDirPath: string, projectEnv: string): StringKeyMap {

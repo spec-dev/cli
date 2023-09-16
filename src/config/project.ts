@@ -1,4 +1,4 @@
-import { createFileWithContents } from '../utils/file'
+import { createFileWithContents, fileExists } from '../utils/file'
 import constants from '../constants'
 import path from 'path'
 
@@ -21,5 +21,8 @@ ${comments.LINKS_SECTION}
 
 export const createSpecProjectConfigFile = (specConfigDir?: string) => {
     specConfigDir = specConfigDir || constants.SPEC_CONFIG_DIR
-    createFileWithContents(path.join(specConfigDir, constants.PROJECT_CONFIG_FILE_NAME), TEMPLATE)
+    const filePath = path.join(specConfigDir, constants.PROJECT_CONFIG_FILE_NAME)
+    fileExists(filePath) || createFileWithContents(filePath, TEMPLATE)
 }
+
+export const localProjectConfigFileExists = () => fileExists(constants.PROJECT_CONFIG_PATH)

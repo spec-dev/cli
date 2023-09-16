@@ -32,12 +32,12 @@ async function linkProject(projectPath: string, localPath: string) {
     // Pull the project and set it as the current one.
     const useProjectResp = await useProject(projectPath, false)
     if (!useProjectResp) return
-    const { id: projectId, metadata } = useProjectResp
+    const { id: projectId } = useProjectResp
 
     // (If needed) create new Spec config directory + project/connection config files.
     const specConfigDir = path.join(location, constants.SPEC_CONFIG_DIR_NAME)
     if (!fileExists(specConfigDir)) {
-        createNewSpecConfig(specConfigDir, metadata.defaultDbUrl)
+        createNewSpecConfig(specConfigDir)
         logSuccess('Inititalized new Spec project.')
 
         // Add connect.toml to .gitignore if file exists.
