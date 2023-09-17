@@ -18,6 +18,8 @@ import addGetCmd from './cmds/get'
 import addLogoutCmd from './cmds/logout'
 import addTailCmd from './cmds/tail'
 import addMigrateCmd from './cmds/migrate'
+import addEnableCmd from './cmds/enable'
+import addRunCmd from './cmds/run'
 
 addAddCmd(program)
 addCreateCmd(program)
@@ -25,16 +27,18 @@ addGetCmd(program)
 addNewCmd(program)
 addTestCmd(program)
 addDBCmd(program)
-addMigrateCmd(program)
 addLinkCmd(program)
 addUseCmd(program)
 addShowCmd(program)
+addEnableCmd(program)
 addInitCmd(program)
 addLoginCmd(program)
 addLogoutCmd(program)
 addLogsCmd(program)
 addOpenCmd(program)
+addMigrateCmd(program)
 addStartCmd(program)
+addRunCmd(program)
 addTailCmd(program)
 addVersionCmd(program)
 

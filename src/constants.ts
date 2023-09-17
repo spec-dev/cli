@@ -11,6 +11,7 @@ const constants: StringKeyMap = {
     MIGRATIONS_DIR_NAME: 'migrations',
     HANDLERS_DIR_NAME: 'handlers',
     HOOKS_DIR_NAME: 'hooks',
+    GRAPHQL_DIR_NAME: 'graphql',
 
     // Global CLI config.
     SPEC_GLOBAL_DIR: path.join(os.homedir(), '.spec'),
