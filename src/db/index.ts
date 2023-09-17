@@ -1,10 +1,10 @@
 import { StringKeyMap } from '../types'
-import { execSync, spawnSync, spawn } from 'node:child_process'
+import { execSync, spawn } from 'node:child_process'
 import { log, logSuccess } from '../logger'
 import path from 'path'
 import { newPassword } from '../utils/pw'
 import constants from '../constants'
-// import { literal } from 'pg-format'
+import { literal } from 'pg-format'
 
 export async function initDatabase(dbName: string, url?: string): Promise<StringKeyMap> {
     // Upsert the "spec" database user.
@@ -146,7 +146,6 @@ export function getLatestMigrationVersion(url: string): StringKeyMap {
 
 export function updateLatestMigrationVersion(url: string, version: string): StringKeyMap {
     try {
-        const literal = (v) => `'${v}'`
         const { rowExists, error } = getLatestMigrationVersion(url)
         if (error) return { error }
 

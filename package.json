@@ -43,6 +43,7 @@
         "open": "^8.4.2",
         "ora": "5.4.1",
         "parse-database-url": "^0.3.0",
+        "pg-format": "^1.0.4",
         "progress-string": "^1.2.2",
         "qoa": "^0.2.0",
         "uuid4": "^2.0.3"

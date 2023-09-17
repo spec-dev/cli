@@ -108,7 +108,7 @@ export async function syncMigrations(
     log(chalk.gray(`- - - - - - - - - - - - -`))
 
     for (let i = 0; i < migrationsToRun.length; i++) {
-        const migration = currentMigrations[i]
+        const migration = migrationsToRun[i]
         const success = await runMigration(url, migrationsDir, migration, i + 1)
         if (!success) return
     }
@@ -130,7 +130,7 @@ export async function runMigration(
     const { version, name } = migration
     const [_, action] = splitMigrationName(name)
 
-    log(`\n${chalk.cyan(`${number}. ${action}`)}\n`)
+    log(`\n${chalk.cyanBright(`${number}. ${action}`)}\n`)
 
     const filePath = path.join(migrationsDir, name, direction)
     if (!fileExists(filePath)) {

@@ -15,7 +15,7 @@ function addMigrateCmd(program) {
     program
         .command(CMD)
         .description("Sync your current project's SQL migrations to a database")
-        .option('--env <type>', 'Database environment to run migrations against')
+        .option('--env', 'Project environment to run migrations against')
         .action(migrate)
 }
 

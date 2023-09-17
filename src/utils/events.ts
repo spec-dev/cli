@@ -4,6 +4,7 @@ const primitiveEventDataProperties = new Set([
     'contractAddress',
     'transactionHash',
     'transactionIndex',
+    'transaction',
     'logIndex',
     'signature',
     'blockHash',
@@ -14,15 +15,17 @@ const primitiveEventDataProperties = new Set([
 ])
 
 const EVENT_TIMESTAMP = 'eventTimestamp'
+const TRANSACTION = 'transaction'
 
 export const trimEventData = (event: StringKeyMap): StringKeyMap => {
     if (!event) return event
 
     const trimmedOrigin = {}
     for (const key in event.origin) {
-        if (key !== EVENT_TIMESTAMP) {
-            trimmedOrigin[key] = event.origin[key]
+        if ([TRANSACTION, EVENT_TIMESTAMP].includes(key)) {
+            continue
         }
+        trimmedOrigin[key] = event.origin[key]
     }
 
     const [nspName, _] = event.name.split('@')
