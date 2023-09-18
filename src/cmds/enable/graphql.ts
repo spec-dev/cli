@@ -6,7 +6,6 @@ import { fileExists } from '../../utils/file'
 import constants from '../../constants'
 import { installPostgraphile } from '../../addons/graphql'
 import { createPostgraphileTemplate } from '../../templates'
-import chalk from 'chalk'
 
 const CMD = 'graphql'
 
