@@ -4,7 +4,8 @@ import constants from '../constants'
 import path from 'path'
 import { sleep } from './time'
 import { fileExists } from './file'
-import { resolveDBConnectionParams } from '../db'
+import { resolveDBConnectionParams, clearEventCursors } from '../db'
+import { asPostgresUrl } from '../utils/formatters'
 
 export function specClientInstalled(): boolean {
     try {
@@ -24,6 +25,10 @@ export async function startSpec(
 ): Promise<StringKeyMap> {
     const { data: connParams, error: formatError } = resolveDBConnectionParams(dbConfig)
     if (formatError) return { error: formatError }
+
+    // Wipe any event cursors for now when running locally.
+    const url = asPostgresUrl(connParams)
+    clearEventCursors(url)
 
     const args = [
         ['--config-dir', specConfigDir],

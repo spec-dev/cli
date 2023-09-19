@@ -1,6 +1,6 @@
 import { StringKeyMap } from '../types'
 import { execSync, spawn } from 'node:child_process'
-import { log, logSuccess } from '../logger'
+import { log, logSuccess, logWarning } from '../logger'
 import path from 'path'
 import { newPassword } from '../utils/pw'
 import constants from '../constants'
@@ -224,4 +224,12 @@ export function resolveDBConnectionParams(dbConfig: StringKeyMap): StringKeyMap 
         name: dbConfig.name,
     }
     return { data: connParams }
+}
+
+export function clearEventCursors(url: string) {
+    try {
+        execSync(`psql ${url} -c "delete from spec.event_cursors"`)
+    } catch (err) {
+        logWarning(`Failed to clear event cursors: ${JSON.stringify(err)}`)
+    }
 }
