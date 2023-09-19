@@ -1,7 +1,7 @@
 {
     "name": "@spec.dev/cli",
     "description": "Spec CLI",
-    "version": "0.1.25",
+    "version": "0.1.26",
     "keywords": [
         "javascript",
         "typescript",
