@@ -4,7 +4,7 @@ import path from 'path'
 
 const comments = {
     LIVE_OBJECTS_SECTION: '# = Live Objects (Sources) ------------------------------',
-    LIVE_COLUMNS_SECTION: '# = Live Columns (Outputs) ------------------------------',
+    LIVE_COLUMNS_SECTION: '# = Live Tables (Outputs) ------------------------------',
     LINKS_SECTION: '# = Links & Filters --------------------------------------',
     DEFAULTS_SECTION: '# = Defaults --------------------------------------------',
 }
