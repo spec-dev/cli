@@ -45,7 +45,9 @@ export async function testLiveObject(
     }
 
     hasCachedDenoTestFile() || cacheDenoTestFile()
-    const liveObjectTestingDbUrl = `postgres://${user}:@localhost:5432/${constants.LIVE_OBJECT_TESTING_DB_NAME}?sslmode=disable`
+    const liveObjectTestingDbUrl =
+        process.env.LIVE_OBJECT_TESTING_DB_URL ||
+        `postgres://${user}:@localhost:5432/${constants.LIVE_OBJECT_TESTING_DB_NAME}`
     const { recent, from, fromBlock, to, toBlock, chains, allTime, keepData, port } = options
     const cmdArgs = [
         '--cached-only',
