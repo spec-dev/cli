@@ -27,9 +27,9 @@ const constants: StringKeyMap = {
     SPEC_DB_USER: 'spec',
     DB_PORT: 5432,
 
-    // Local Live Object testing.
-    LIVE_OBJECT_TESTING_DB_NAME: 'live-object-testing',
-    LIVE_OBJECT_TESTING_API_PORT: 8000,
+    // Live Table testing.
+    LIVE_TABLE_TESTING_DB_NAME: 'spec-test',
+    LIVE_TABLE_TESTING_API_PORT: 8000,
 
     // Desktop app name.
     SPEC_APP_NAME: 'Spec',
