@@ -12,7 +12,7 @@ import {
     TableSpec,
     ColumnSpec,
     BigInt,
-} from 'https://esm.sh/@spec.dev/core@0.0.127'
+} from 'https://esm.sh/@spec.dev/core@0.0.128'
 import { createEventClient, SpecEventClient } from 'https://esm.sh/@spec.dev/event-client@0.0.16'
 import {
     buildSelectQuery,
@@ -28,6 +28,7 @@ const chainNamespaces = {
     GOERLI: 'goerli',
     POLYGON: 'polygon',
     MUMBAI: 'mumbai',
+    BASE: 'base',
 }
 
 const chainIds = {
@@ -35,6 +36,7 @@ const chainIds = {
     GOERLI: '5',
     POLYGON: '137',
     MUMBAI: '80001',
+    BASE: '8453',
 }
 
 const nspForChainId = {
@@ -42,6 +44,7 @@ const nspForChainId = {
     [chainIds.GOERLI]: chainNamespaces.GOERLI,
     [chainIds.POLYGON]: chainNamespaces.POLYGON,
     [chainIds.MUMBAI]: chainNamespaces.MUMBAI,
+    [chainIds.BASE]: chainNamespaces.BASE,
 }
 
 const codes = {

@@ -5,6 +5,7 @@ export const chainIds: StringMap = {
     GOERLI: '5',
     POLYGON: '137',
     MUMBAI: '80001',
+    BASE: '8453',
 }
 
 export const chainNameForId = {
@@ -12,6 +13,7 @@ export const chainNameForId = {
     [chainIds.GOERLI]: 'goerli',
     [chainIds.POLYGON]: 'polygon',
     [chainIds.MUMBAI]: 'mumbai',
+    [chainIds.BASE]: 'base',
 }
 
 export const chainIdsSet = new Set(Object.values(chainIds))
