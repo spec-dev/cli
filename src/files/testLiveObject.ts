@@ -8,11 +8,11 @@ import {
     StringKeyMap,
     Event,
     Call,
-    LiveTable,
+    LiveObject,
     TableSpec,
     ColumnSpec,
     BigInt,
-} from 'https://esm.sh/@spec.dev/core@0.0.128'
+} from 'https://esm.sh/@spec.dev/core@0.0.129'
 import { createEventClient, SpecEventClient } from 'https://esm.sh/@spec.dev/event-client@0.0.16'
 import {
     buildSelectQuery,
@@ -341,7 +341,7 @@ async function getLiveObjectsInGivenPath(folder: string, liveObjects: StringKeyM
     }
 }
 
-function getUniqueContractGroupsForLiveObject(liveObject: LiveTable): string[] {
+function getUniqueContractGroupsForLiveObject(liveObject: LiveObject): string[] {
     const givenInputNames = [
         ...Object.keys(liveObject._eventHandlers || {}),
         ...Object.keys(liveObject._callHandlers || {}),
@@ -1192,7 +1192,7 @@ async function performTableChanges(newTableSpec: TableSpec, diffs: StringKeyMap)
     }
 }
 
-async function upsertLiveObjectTable(liveObject: LiveTable): Promise<string> {
+async function upsertLiveObjectTable(liveObject: LiveObject): Promise<string> {
     // Get the new table spec for this Live Object.
     const newTableSpec = await liveObject.tableSpec()
     const { schemaName, tableName } = newTableSpec
@@ -1318,7 +1318,7 @@ function subscribeToEventsAndCalls(
 async function handleInput(
     input: Event | Call,
     liveObjectName: string,
-    TargetLiveObject: LiveTable,
+    TargetLiveObject: LiveObject,
     inputContractGroupAbis: StringKeyMap,
     apiKey: string,
     handler: string,

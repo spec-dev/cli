@@ -28,8 +28,8 @@ const constants: StringKeyMap = {
     DB_PORT: 5432,
 
     // Live Table testing.
-    LIVE_TABLE_TESTING_DB_NAME: 'spec-test',
-    LIVE_TABLE_TESTING_API_PORT: 8000,
+    LIVE_OBJECT_TESTING_DB_NAME: 'live-object-testing',
+    LIVE_OBJECT_TESTING_API_PORT: 8000,
 
     // Desktop app name.
     SPEC_APP_NAME: 'Spec',

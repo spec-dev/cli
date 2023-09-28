@@ -14,8 +14,8 @@ const CMD = 'test'
 function addObjectCommand(program) {
     program
         .command(CMD)
-        .description('Test one or more Live Table specs')
-        .argument('name', 'Name of the Live Table spec to test')
+        .description('Test one or more Live Objects')
+        .argument('name', 'Name of the Live Object to test')
         .option('--recent', 'Test on the previous 30 days of data')
         .option('--days <type>', 'Number of days to fetch test data for')
         .option('--from <type>', 'Start date of the date range to fetch test data for')
@@ -24,16 +24,16 @@ function addObjectCommand(program) {
         .option('--to-block <type>', 'End block of the block range to fetch test data for')
         .option(
             '--all-time',
-            'Test over the entire date-range of input data used by the Live Table(s)'
+            'Test over the entire date-range of input data used by the Live Object(s)'
         )
         .option('--chains <type>', 'Chain ids to fetch test data for')
-        .option('--keep-data', 'Whether to keep your existing Live Table test data')
-        .option('--port <type>', 'Port to run the Live Table testing server on')
+        .option('--keep-data', 'Whether to keep your existing test data from the previous run')
+        .option('--port <type>', 'Port to run the testing server on')
         .action(test)
 }
 
 /**
- * Test one or more Live Table specs.
+ * Test one or more Live Objects.
  */
 async function test(name, opts) {
     const { options, isValid } = validateOptions(opts || {})
@@ -55,7 +55,7 @@ async function test(name, opts) {
     // Ensure the testing database exists locally.
     const { error: dbError } = upsertLiveObjectTestingDB()
     if (dbError) {
-        logFailure(`Failed to upsert the live table testing database locally: ${dbError}`)
+        logFailure(`Failed to upsert the live object testing database locally: ${dbError}`)
         return
     }
 
@@ -187,7 +187,7 @@ function validateOptions(options: StringKeyMap): StringKeyMap {
         chains: chainIds.join(','),
         allTime: !!allTime,
         keepData: !!keepData,
-        port: toNumber(options.port) || constants.LIVE_TABLE_TESTING_API_PORT,
+        port: toNumber(options.port) || constants.LIVE_OBJECT_TESTING_API_PORT,
     }
 
     return { options: opts, isValid: true }
