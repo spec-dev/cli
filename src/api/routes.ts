@@ -23,6 +23,7 @@ export const routes = {
     CREATE_CONTRACT_GROUP: [prefix.CONTRACT, 'group'].join('/'),
     GET_CONTRACT_GROUP: [prefix.CONTRACT, 'group'].join('/'),
     GET_CONTRACT_GROUP_EVENTS: [prefix.CONTRACT, 'group', 'events'].join('/'),
+    SEARCH_EVENT_VERSIONS: [prefix.EVENT_VERSION + 's', 'search'].join('/'),
     RESOLVE_EVENT_VERSION_CURSORS: [prefix.EVENT_VERSION + 's', 'resolve', 'cursors'].join('/'),
     GET_EVENT_VERSION_DATA_AFTER: [prefix.EVENT_VERSION + 's', 'data', 'after'].join('/'),
 }

@@ -1,6 +1,8 @@
 import { StringKeyMap } from '../types'
 import qoa from 'qoa'
 import chalk from 'chalk'
+import prompts from 'prompts'
+import { formatEventVersions, getEventVersions } from '../services/eventVersionServices'
 
 const EMAIL_PROMPT = {
     type: 'input',
@@ -74,6 +76,14 @@ const CONTRACT_ADDRESSES_PROMPT = {
     handle: 'addresses',
 }
 
+const IS_FACTORY_PROMPT = {
+    type: 'confirm',
+    name: 'value',
+    message: 'Factory contract? ',
+    accept: 'Y',
+    deny: 'n',
+}
+
 function stripWrappedQuotes(val: string): string {
     if (!val) return val
     if (val[0] === '"') {
@@ -135,7 +145,8 @@ export async function promptNewLiveObjectDetails(
 export async function promptCreateContractGroupDetails(
     group?: string,
     chainIds?: string,
-    abi?: string
+    abi?: string,
+    isFactory?: boolean
 ): Promise<StringKeyMap> {
     // Required
     while (!group) {
@@ -152,7 +163,12 @@ export async function promptCreateContractGroupDetails(
         abi = stripWrappedQuotes((await qoa.prompt([ABI_PROMPT])).abi)
     }
 
-    return { group, chainIds, abi }
+    // Required
+    while (isFactory === null) {
+        isFactory = (await prompts(IS_FACTORY_PROMPT)).value
+    }
+
+    return { group, chainIds, abi, isFactory }
 }
 
 export async function promptAddContractsDetails(
@@ -180,4 +196,58 @@ export async function promptAddContractsDetails(
     abi = stripWrappedQuotes((await qoa.prompt([OPTIONAL_ABI_PROMPT])).abi)
 
     return { addresses, chainId, group, abi }
+}
+
+export async function getFactoryEvent(contractGroup: string): Promise<StringKeyMap[]> {
+    let factoryEventId
+    let addressProperty
+    let cachedResults
+    let useInitialInput = true
+
+    factoryEventId = (
+        await prompts({
+            type: 'autocomplete',
+            name: 'searchId',
+            message: 'Search for factory event: ',
+            choices: ['', '', '', '', '', ''],
+            fallback: ' ',
+            suggest: async (input, choices) => {
+                let results = useInitialInput
+                    ? await getEventVersions(contractGroup)
+                    : await getEventVersions(input)
+                useInitialInput = false
+                if (!results.length) {
+                    return []
+                }
+                cachedResults = results
+                const displayResults = await formatEventVersions(results)
+                return displayResults
+            },
+        })
+    ).searchId
+
+    if (!factoryEventId) return []
+
+    const factoryEvent = cachedResults.find((result) => result.searchId === factoryEventId)
+    const properties = factoryEvent.addressProperties.map((prop) => {
+        return {
+            title: prop,
+            value: prop,
+        }
+    })
+
+    if (!properties.length) return [factoryEventId]
+
+    addressProperty = (
+        await prompts({
+            type: 'select',
+            message: 'Which property is the contract address?',
+            name: 'property',
+            symbol: '>',
+            fallback: 'No properties available',
+            choices: properties,
+        })
+    ).property
+
+    return [factoryEventId, addressProperty]
 }

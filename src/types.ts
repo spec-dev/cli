@@ -97,3 +97,8 @@ export interface Migration {
     name: string
     version: number
 }
+
+export interface SearchEventVersionsResponse {
+    error?: string
+    events?: StringKeyMap
+}
