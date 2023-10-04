@@ -16,5 +16,5 @@ export default {
     INSTALL_DENO:
         'Deno is required to test Live Objects locally. Please install deno and then try again.',
     DB_NOT_INITIALIZED:
-        'Database not yet initialized for Spec. Run "spec db init <url>" and then try again.',
+        'Database not yet initialized for Spec. Run "spec db init --url <DB_URL>" and then try again.',
 }
