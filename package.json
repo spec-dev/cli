@@ -1,7 +1,7 @@
 {
     "name": "@spec.dev/cli",
     "description": "Spec CLI",
-    "version": "0.2.1",
+    "version": "0.2.2",
     "keywords": [
         "javascript",
         "typescript",
@@ -34,10 +34,12 @@
     },
     "dependencies": {
         "@ltd/j-toml": "1.30.0",
+        "@spec.dev/pm": "^0.0.2",
         "@streamparser/json": "^0.0.8",
         "ansi-diff-stream": "^1.2.1",
         "chalk": "4.1.0",
         "commander": "^9.4.0",
+        "humps": "^2.0.1",
         "netrc": "^0.1.4",
         "node-fetch": "^2.6.6",
         "open": "^8.4.2",
@@ -46,6 +48,7 @@
         "pg-format": "^1.0.4",
         "progress-string": "^1.2.2",
         "qoa": "^0.2.0",
+        "short-uuid": "^4.2.0",
         "uuid4": "^2.0.3"
     },
     "devDependencies": {

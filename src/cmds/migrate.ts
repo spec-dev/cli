@@ -4,7 +4,7 @@ import { getCurrentProjectId, getProjectInfo, getCurrentProjectEnv } from '../co
 import { getDBConfig } from '../config/connect'
 import constants from '../constants'
 import path from 'path'
-import { resolveDBConnectionParams, specSchemaTablesExist } from '../db'
+import { resolveDBConnectionParams, initDatabase } from '../db'
 import { fileExists } from '../utils/file'
 import { syncMigrations } from '../config/migrations'
 import { asPostgresUrl } from '../utils/formatters'
@@ -94,21 +94,15 @@ export async function migrate(options, logWhenNoAction: boolean = true) {
         return false
     }
 
-    // Ensure database was already initialized for Spec.
+    // Initialize database for usage with Spec (if not already).
     const url = asPostgresUrl(connParams)
-    const { data: alreadyInitializedDb, error: schemaError } = specSchemaTablesExist(
-        connParams.name,
-        url
-    )
-    if (schemaError) {
-        logFailure(schemaError)
-        return false
-    }
-    if (!alreadyInitializedDb) {
-        logWarning(msg.DB_NOT_INITIALIZED)
+    const { error: initDBError } = await initDatabase(connParams.name)
+    if (initDBError) {
+        logFailure(`Error initializing database for Spec: ${initDBError}`)
         return false
     }
 
+    // Apply any new migrations.
     await syncMigrations(migrationsDir, url, env, logWhenNoAction)
 
     return true

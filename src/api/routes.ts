@@ -10,6 +10,7 @@ const prefix = {
     CONTRACT: 'contract',
     ABI: 'abi',
     EVENT_VERSION: 'event-version',
+    LIVE_OBJECT_VERSION: 'live-object-version',
 }
 
 export const routes = {
@@ -25,6 +26,7 @@ export const routes = {
     GET_CONTRACT_GROUP_EVENTS: [prefix.CONTRACT, 'group', 'events'].join('/'),
     RESOLVE_EVENT_VERSION_CURSORS: [prefix.EVENT_VERSION + 's', 'resolve', 'cursors'].join('/'),
     GET_EVENT_VERSION_DATA_AFTER: [prefix.EVENT_VERSION + 's', 'data', 'after'].join('/'),
+    GET_LIVE_OBJECT_VERSION: prefix.LIVE_OBJECT_VERSION,
 }
 
 export const buildUrl = (route: string) => {

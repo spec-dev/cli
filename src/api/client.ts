@@ -12,8 +12,10 @@ import {
     GetContractGroupEventsResponse,
     ResolveEventVersionCursorsResponse,
     ResolveEventVersionDataAfterResponse,
+    GetLiveObjectVersionResponse,
     StringMap,
     StringKeyMap,
+    LiveObjectVersion,
 } from '../types'
 
 const formatAuthHeader = (sessionToken: string): StringMap => ({
@@ -164,6 +166,11 @@ async function getEventVersionDataAfter(
     return error ? { error } : { events: data?.events || {} }
 }
 
+async function getLiveObjectVersion(id: string): Promise<GetLiveObjectVersionResponse> {
+    const { error, data } = await get(buildUrl(routes.GET_LIVE_OBJECT_VERSION), { id })
+    return error ? { error } : { lov: data as LiveObjectVersion }
+}
+
 export const client = {
     login,
     getProject,
@@ -176,4 +183,5 @@ export const client = {
     getContractGroupEvents,
     resolveEventVersionCursors,
     getEventVersionDataAfter,
+    getLiveObjectVersion,
 }

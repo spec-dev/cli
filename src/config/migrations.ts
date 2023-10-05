@@ -1,4 +1,4 @@
-import { Migration, StringKeyMap } from '../types'
+import { LiveObjectVersion, Migration, StringKeyMap } from '../types'
 import {
     fileExists,
     createDir,
@@ -15,7 +15,18 @@ import constants from '../constants'
 import path from 'path'
 import chalk from 'chalk'
 import { logFailure, log, logSuccess, logWarning } from '../logger'
+import { camelToSnake, fromNamespacedVersion } from '../utils/formatters'
+import { guessColType } from '../utils/propertyTypes'
+import { ident } from 'pg-format'
+import short from 'short-uuid'
 
+const newConstraintName = (prefix: string): string => `${prefix}_${short.generate().toLowerCase()}`
+
+const typeIdent = (type: string): string => {
+    return type.endsWith('[]') ? `${ident(type.slice(0, -2))}[]` : ident(type)
+}
+
+const schemaName = 'public'
 const UP = 'up.sql'
 const DOWN = 'down.sql'
 
@@ -40,7 +51,12 @@ export function splitMigrationName(name: string): string[] | null {
     return [version, action]
 }
 
-export function saveMigration(projectPath: string, migration: Migration): StringKeyMap {
+export function saveMigration(
+    projectPath: string,
+    migration: Migration,
+    up: string = '',
+    down: string = ''
+): StringKeyMap {
     const migrationsDirPath = path.join(
         projectPath,
         constants.SPEC_CONFIG_DIR_NAME,
@@ -56,8 +72,8 @@ export function saveMigration(projectPath: string, migration: Migration): String
         createDir(versionDir)
 
         // Create empty up/down migration files for this version.
-        createFileWithContents(path.join(versionDir, UP), '')
-        createFileWithContents(path.join(versionDir, DOWN), '')
+        createFileWithContents(path.join(versionDir, UP), up)
+        createFileWithContents(path.join(versionDir, DOWN), down)
         return { versionDir }
     } catch (error) {
         return { error }
@@ -186,4 +202,78 @@ export function getCurrentMigrations(migrationsDir: string): StringKeyMap {
     }
 
     return { data: migrations.sort((a, b) => a.version - b.version) }
+}
+
+export function generateCreateTableMigrationFromLov(lov: LiveObjectVersion): StringKeyMap {
+    const { name } = fromNamespacedVersion(lov.name)
+    const tableName = camelToSnake(name)
+
+    const columns = lov.properties.map(({ name, type }) => ({
+        name: camelToSnake(name),
+        type: guessColType(type),
+    }))
+    const pkColumnNames = lov.uniqueBy.map(camelToSnake)
+
+    // Create new table and add add primary keys.
+    const [createTableSql, dropTableSql] = buildTableSql(tableName, columns)
+    const addPrimaryKeySql = buildPrimaryKeySql(tableName, pkColumnNames)
+
+    // Index by block_number/chain_id, as well as the primary timestamp.
+    const indexes = [
+        ['block_number', 'chain_id'],
+        [camelToSnake(lov.primaryTimestampProperty)],
+    ].map((columnNames) => buildIndexSql(tableName, columnNames))
+    const upIndexes = []
+    let downIndexes = []
+    for (const [addIndex, dropIndex] of indexes) {
+        upIndexes.push(addIndex)
+        downIndexes.push(dropIndex)
+    }
+    downIndexes = downIndexes.reverse()
+
+    const up = [createTableSql, addPrimaryKeySql, ...upIndexes]
+    const down = [...downIndexes, dropTableSql]
+    const migration = newMigration(`create_${tableName}`)
+
+    return {
+        up: sqlStatementsAsTx(up),
+        down: sqlStatementsAsTx(down),
+        migration,
+        tablePath: [schemaName, tableName].join('.'),
+    }
+}
+
+function buildTableSql(tableName: string, columns: StringKeyMap[]): string[] {
+    const columnStatements = columns.map((c) => buildColumnSql(c))
+    return [
+        `create table ${ident(schemaName)}.${ident(tableName)} (${columnStatements.join(', ')})`,
+        `drop table ${ident(schemaName)}.${ident(tableName)}`,
+    ]
+}
+
+function buildColumnSql(column: StringKeyMap): string {
+    return [ident(column.name), typeIdent(column.type)].join(' ')
+}
+
+function buildPrimaryKeySql(tableName: string, columnNames: string[]): string {
+    const constraintName = newConstraintName('pk')
+    return [
+        `alter table ${ident(schemaName)}.${ident(tableName)}`,
+        `add constraint ${ident(constraintName)}`,
+        `primary key (${columnNames.map(ident).join(', ')})`,
+    ].join(' ')
+}
+
+function buildIndexSql(tableName: string, columnNames: string[]): string[] {
+    const indexName = newConstraintName('idx')
+    return [
+        `create index ${ident(indexName)} on ${ident(schemaName)}.${ident(tableName)} (${columnNames
+            .map(ident)
+            .join(', ')})`,
+        `drop index ${ident(schemaName)}.${ident(indexName)}`,
+    ]
+}
+
+function sqlStatementsAsTx(statements) {
+    return ['BEGIN;', ...statements.map((s) => `    ${s};`), 'COMMIT;'].join('\n')
 }
