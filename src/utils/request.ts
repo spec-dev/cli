@@ -67,7 +67,7 @@ async function parseJSONResp(resp: Response): Promise<SpecApiResponse> {
     try {
         data = await resp.json()
     } catch (err) {
-        return { error: `Error parsing JSON response.` }
+        return { error: `Error parsing JSON response: ${err}.` }
     }
     if (data.error) {
         return { error: data.error }

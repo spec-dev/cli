@@ -151,6 +151,7 @@ async function pollForRegistrationResult(
             failed,
             error,
         } = await client.getContractRegistrationJob(sessionToken, uid)
+        if (error && error.toLowerCase().includes('parsing json')) continue
 
         // Job failed.
         if (failed || error) {
