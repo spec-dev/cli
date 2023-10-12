@@ -1,5 +1,6 @@
 import { AnyMap, StringKeyMap } from '../types'
 import humps from 'humps'
+import constants from '../constants'
 
 export function removeTrailingSlash(str: string): string {
     return str.replace(/\/+$/, '')
@@ -97,3 +98,12 @@ export const fromNamespacedVersion = (
 
     return { nsp, name, version }
 }
+
+export const toNamespaceSlug = (value: string): string => {
+    return value
+        .replace(/[']/g, '')
+        .replace(/[^A-Za-z0-9-_.]/g, '-')
+        .toLowerCase()
+}
+
+export const toSpecNamespaceUrl = (nsp: string) => [constants.SPEC_ORIGIN, nsp].join('/')

@@ -19,6 +19,9 @@ const constants: StringKeyMap = {
     SPEC_GLOBAL_CREDS_FILE_NAME: 'creds.toml',
     SPEC_GLOBAL_PROJECTS_FILE_NAME: 'projects.toml',
 
+    // Spec base/ecosystem.
+    SPEC_ORIGIN: ev('SPEC_ORIGIN', 'https://spec.dev'),
+
     // Spec API config.
     SPEC_API_ORIGIN: ev('SPEC_API_ORIGIN', 'https://api.spec.dev'),
     USER_AUTH_HEADER_NAME: 'Spec-User-Auth-Token',
