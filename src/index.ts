@@ -20,6 +20,7 @@ import addTailCmd from './cmds/tail'
 import addMigrateCmd from './cmds/migrate'
 import addEnableCmd from './cmds/enable'
 import addRunCmd from './cmds/run'
+import addSeedCmd from './cmds/seed'
 
 addAddCmd(program)
 addCreateCmd(program)
@@ -41,5 +42,6 @@ addStartCmd(program)
 addTailCmd(program)
 addTestCmd(program)
 addVersionCmd(program)
+addSeedCmd(program)
 
 program.parse()
