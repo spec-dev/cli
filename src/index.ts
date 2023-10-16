@@ -20,6 +20,7 @@ import addTailCmd from './cmds/tail'
 import addMigrateCmd from './cmds/migrate'
 import addEnableCmd from './cmds/enable'
 import addRunCmd from './cmds/run'
+import addDocsCmd from './cmds/docs'
 
 addAddCmd(program)
 addCreateCmd(program)
@@ -31,6 +32,7 @@ addUseCmd(program)
 addShowCmd(program)
 addEnableCmd(program)
 addRunCmd(program)
+addDocsCmd(program)
 addInitCmd(program)
 addLoginCmd(program)
 addLogoutCmd(program)
