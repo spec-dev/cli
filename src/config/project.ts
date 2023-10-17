@@ -3,16 +3,16 @@ import constants from '../constants'
 import path from 'path'
 
 const comments = {
-    LIVE_OBJECTS_SECTION: '# = Live Objects (Sources) ------------------------------',
-    LIVE_COLUMNS_SECTION: '# = Live Tables (Outputs) ------------------------------',
-    LINKS_SECTION: '# = Links & Filters --------------------------------------',
-    DEFAULTS_SECTION: '# = Defaults --------------------------------------------',
+    DATA_SOURCES_SECTION: '# = Data Sources -----------------------------',
+    LIVE_TABLES_SECTION: '# = Live Tables ------------------------------',
+    LINKS_SECTION: '# = Links & Filters --------------------------',
+    DEFAULTS_SECTION: '# = Defaults ---------------------------------',
 }
 
-const TEMPLATE = `${comments.LIVE_OBJECTS_SECTION}
+const TEMPLATE = `${comments.DATA_SOURCES_SECTION}
 
 
-${comments.LIVE_COLUMNS_SECTION}
+${comments.LIVE_TABLES_SECTION}
 
 
 ${comments.LINKS_SECTION}
