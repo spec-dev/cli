@@ -103,9 +103,7 @@ export async function migrate(options, logWhenNoAction: boolean = true) {
     }
 
     // Apply any new migrations.
-    await syncMigrations(migrationsDir, url, env, logWhenNoAction)
-
-    return true
+    return await syncMigrations(migrationsDir, url, env, logWhenNoAction)
 }
 
 export default addMigrateCmd

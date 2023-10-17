@@ -26,7 +26,7 @@ const typeIdent = (type: string): string => {
     return type.endsWith('[]') ? `${ident(type.slice(0, -2))}[]` : ident(type)
 }
 
-const schemaName = 'public'
+export const schemaName = 'public'
 const UP = 'up.sql'
 const DOWN = 'down.sql'
 
@@ -85,30 +85,30 @@ export async function syncMigrations(
     url: string,
     env: string,
     logWhenNoAction: boolean = true
-) {
+): Promise<boolean> {
     // Get list of current migrations.
     const { data: currentMigrations, error } = getCurrentMigrations(migrationsDir)
     if (error) {
         logFailure(`Error while inspecting current migrations: ${error}`)
-        return
+        return false
     }
     if (!currentMigrations.length) {
         logWhenNoAction && log(`Migrations up-to-date.`)
-        return
+        return true
     }
 
     // Get the latest migration version listed in the database.
     const { data: latestDbVersion, error: queryError } = getLatestMigrationVersion(url)
     if (queryError) {
         logFailure(`Error checking database for latest migration version: ${queryError}`)
-        return
+        return false
     }
 
     // Find the migrations that haven't run yet.
     const migrationsToRun = currentMigrations.filter(({ version }) => version > latestDbVersion)
     if (!migrationsToRun.length) {
         logWhenNoAction && log(`Migrations up-to-date.`)
-        return
+        return true
     }
 
     logSuccess(`${migrationsToRun.length} new migrations detected`)
@@ -126,10 +126,11 @@ export async function syncMigrations(
     for (let i = 0; i < migrationsToRun.length; i++) {
         const migration = migrationsToRun[i]
         const success = await runMigration(url, migrationsDir, migration, i + 1)
-        if (!success) return
+        if (!success) return false
     }
 
     log(chalk.greenBright(`Successfully ran ${migrationsToRun.length} migrations.`))
+    return true
 }
 
 export async function runMigration(
@@ -204,10 +205,10 @@ export function getCurrentMigrations(migrationsDir: string): StringKeyMap {
     return { data: migrations.sort((a, b) => a.version - b.version) }
 }
 
-export function generateCreateTableMigrationFromLov(lov: LiveObjectVersion): StringKeyMap {
-    const { name } = fromNamespacedVersion(lov.name)
-    const tableName = camelToSnake(name)
-
+export function generateCreateTableMigrationFromLov(
+    lov: LiveObjectVersion,
+    tableName: string
+): StringKeyMap {
     const columns = lov.properties.map(({ name, type }) => ({
         name: camelToSnake(name),
         type: guessColType(type),
@@ -239,7 +240,6 @@ export function generateCreateTableMigrationFromLov(lov: LiveObjectVersion): Str
         up: sqlStatementsAsTx(up),
         down: sqlStatementsAsTx(down),
         migration,
-        tablePath: [schemaName, tableName].join('.'),
     }
 }
 

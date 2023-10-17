@@ -6,9 +6,10 @@ import { fileExists } from '../../utils/file'
 import { getCurrentProjectId, getProjectInfo } from '../../config/global'
 import constants from '../../constants'
 import { saveMigration, generateCreateTableMigrationFromLov } from '../../config/migrations'
-import { camelToSnake } from '../../utils/formatters'
+import { camelToSnake, fromNamespacedVersion } from '../../utils/formatters'
 import { upsertLiveColumns } from '@spec.dev/pm'
 import { migrate } from '../migrate'
+import { schemaName } from '../../config/migrations'
 
 const CMD = 'table'
 
@@ -16,7 +17,9 @@ function addContractsCmd(cmd) {
     cmd.command(CMD)
         .description('Add a new live table to your current project')
         .requiredOption('--from <id>', 'Live object version', null)
+        .option('--name <type>', 'Table name')
         .option('--migrate', 'Whether to also immediately run the new table migration')
+        .option('--config-only', 'Avoid generating the SQL migration')
         .action(addTable)
 }
 
@@ -24,7 +27,12 @@ function addContractsCmd(cmd) {
  * Add the SQL migration and Spec config for a
  * new live table to your current project.
  */
-export async function addTable(opts: { from: string; migrate: boolean }) {
+export async function addTable(opts: {
+    from: string
+    name: string
+    migrate: boolean
+    configOnly: boolean
+}) {
     // Get the current project id.
     const { data: projectId, error } = getCurrentProjectId()
     if (error) {
@@ -70,14 +78,20 @@ export async function addTable(opts: { from: string; migrate: boolean }) {
         return
     }
 
-    // Create new table migration from this live object version's structure.
-    const { up, down, migration, tablePath } = generateCreateTableMigrationFromLov(lov)
-    const { error: migrationError } = saveMigration(projectDirPath, migration, up, down)
-    if (migrationError) {
-        logFailure(migrationError)
-        return
+    const { name } = fromNamespacedVersion(lov.name)
+    const tableName = opts.name || camelToSnake(name)
+    const tablePath = [schemaName, tableName].join('.')
+
+    if (!opts.configOnly) {
+        // Create new table migration from this live object version's structure.
+        const { up, down, migration } = generateCreateTableMigrationFromLov(lov, tableName)
+        const { error: migrationError } = saveMigration(projectDirPath, migration, up, down)
+        if (migrationError) {
+            logFailure(migrationError)
+            return
+        }
+        if (opts.migrate && !(await migrate({}, false))) return
     }
-    if (opts.migrate && !(await migrate({}, false))) return
 
     // Add the default live table config to project.toml
     const liveColumns = {}
