@@ -4,19 +4,19 @@ import { promptNewLiveObjectDetails } from '../../utils/prompt'
 import { unique } from '../../utils/formatters'
 import { chainIdsSet } from '../../utils/chains'
 
-const CMD = 'object'
+const CMD = 'table'
 
-function addObjectCommand(cmd) {
+function addTableCommand(cmd) {
     cmd.command(CMD)
-        .description('Create a new Live Object template')
-        .argument('[fullName]', 'The full name of the live object in "nsp.Name" format', null)
-        .action(newObject)
+        .description('Create a new custom Live Table')
+        .argument('[fullName]', 'The full name of the Live Table in "nsp.Name" format', null)
+        .action(newTable)
 }
 
 /**
- * Create a new Live Object template.
+ * Create a new Live Table template.
  */
-async function newObject(fullName: string) {
+async function newTable(fullName: string) {
     let namespace = ''
     let name = ''
     if (fullName) {
@@ -60,4 +60,4 @@ async function newObject(fullName: string) {
     logSuccess(`Created template for live object "${liveObjectId}" in folder "./${name}"`)
 }
 
-export default addObjectCommand
+export default addTableCommand

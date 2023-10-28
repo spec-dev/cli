@@ -1,5 +1,5 @@
 import addMigrationCmd from './migration'
-import addObjectCmd from './object'
+import addTableCmd from './table'
 import chalk from 'chalk'
 
 const CMD = 'new'
@@ -7,7 +7,7 @@ const CMD = 'new'
 function addNewCmd(program) {
     const newCmd = program.command(CMD).description(chalk.gray('...'))
     addMigrationCmd(newCmd)
-    addObjectCmd(newCmd)
+    addTableCmd(newCmd)
 }
 
 export default addNewCmd

@@ -68,7 +68,7 @@ const manifestFileContents = (
     )
 
 const specFileContents = (name: string, description?: string): string => {
-    const imports = ['Spec', 'LiveObject', 'Property', 'Event', 'OnEvent', 'Address']
+    const imports = ['Spec', 'LiveTable', 'Property', 'Event', 'OnEvent', 'Address']
     let contents = `import { ${imports.join(', ')} } from '@spec.dev/core'
 
 /**
@@ -77,7 +77,7 @@ const specFileContents = (name: string, description?: string): string => {
 @Spec({ 
     uniqueBy: ['someProperty', 'chainId'] 
 })
-class ${name} extends LiveObject {
+class ${name} extends LiveTable {
     // ...
     @Property()
     someProperty: Address

@@ -11,11 +11,11 @@ import { StringKeyMap } from '../types'
 
 const CMD = 'test'
 
-function addObjectCommand(program) {
+function addTestCommand(program) {
     program
         .command(CMD)
-        .description('Test one or more Live Objects')
-        .argument('name', 'Name of the Live Object to test')
+        .description('Test one or more Live Tables')
+        .argument('name', 'Name of the Live Table to test')
         .option('--recent', 'Test on the previous 30 days of data')
         .option('--days <type>', 'Number of days to fetch test data for')
         .option('--from <type>', 'Start date of the date range to fetch test data for')
@@ -24,7 +24,7 @@ function addObjectCommand(program) {
         .option('--to-block <type>', 'End block of the block range to fetch test data for')
         .option(
             '--all-time',
-            'Test over the entire date-range of input data used by the Live Object(s)'
+            'Test over the entire date-range of input data used by the Live Table(s)'
         )
         .option('--chains <type>', 'Chain ids to fetch test data for')
         .option('--keep-data', 'Whether to keep your existing test data from the previous run')
@@ -33,7 +33,7 @@ function addObjectCommand(program) {
 }
 
 /**
- * Test one or more Live Objects.
+ * Test one or more Live Tables.
  */
 async function test(name, opts) {
     const { options, isValid } = validateOptions(opts || {})
@@ -193,4 +193,4 @@ function validateOptions(options: StringKeyMap): StringKeyMap {
     return { options: opts, isValid: true }
 }
 
-export default addObjectCommand
+export default addTestCommand
