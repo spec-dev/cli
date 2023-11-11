@@ -13,10 +13,10 @@ import { schemaName } from '../../config/migrations'
 
 const CMD = 'table'
 
-function addContractsCmd(cmd) {
+function addTableCmd(cmd) {
     cmd.command(CMD)
-        .description('Add a new live table to your current project')
-        .requiredOption('--from <id>', 'Live object version', null)
+        .description('Add a new Live Table to your current project')
+        .argument('source', 'Live Table data source')
         .option('--name <type>', 'Table name')
         .option('--migrate', 'Whether to also immediately run the new table migration')
         .option('--config-only', 'Avoid generating the SQL migration')
@@ -27,12 +27,14 @@ function addContractsCmd(cmd) {
  * Add the SQL migration and Spec config for a
  * new live table to your current project.
  */
-export async function addTable(opts: {
-    from: string
-    name: string
-    migrate: boolean
-    configOnly: boolean
-}) {
+export async function addTable(
+    source: string,
+    opts: {
+        name: string
+        migrate: boolean
+        configOnly: boolean
+    }
+) {
     // Get the current project id.
     const { data: projectId, error } = getCurrentProjectId()
     if (error) {
@@ -68,12 +70,11 @@ export async function addTable(opts: {
         return
     }
 
-    // Get live object version by "id".
-    const id = opts.from
-    const { lov, error: lovError } = await client.getLiveObjectVersion(id)
+    // Get live object version for given source.
+    const { lov, error: lovError } = await client.getLiveObjectVersion(source)
     if (lovError) {
         lovError.toLowerCase().includes('not found')
-            ? logWarning(`No live object version found for "${id}".`)
+            ? logWarning(`No live object version found for "${source}".`)
             : logFailure(`Error resolving live object version: ${lovError}`)
         return
     }
@@ -114,4 +115,4 @@ export async function addTable(opts: {
     logSuccess(`Added new live table "${tablePath.split('.')[1]}".`)
 }
 
-export default addContractsCmd
+export default addTableCmd

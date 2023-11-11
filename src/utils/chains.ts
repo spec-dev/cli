@@ -6,6 +6,11 @@ export const chainIds: StringMap = {
     POLYGON: '137',
     MUMBAI: '80001',
     BASE: '8453',
+    OPTIMISM: '10',
+    ARBITRUM: '42161',
+    PGN: '424',
+    CELO: '42220',
+    LINEA: '59144',
 }
 
 export const chainNameForId = {
@@ -14,6 +19,11 @@ export const chainNameForId = {
     [chainIds.POLYGON]: 'polygon',
     [chainIds.MUMBAI]: 'mumbai',
     [chainIds.BASE]: 'base',
+    [chainIds.OPTIMISM]: 'optimism',
+    [chainIds.ARBITRUM]: 'arbitrum',
+    [chainIds.PGN]: 'pgn',
+    [chainIds.CELO]: 'celo',
+    [chainIds.LINEA]: 'linea',
 }
 
 export const chainIdsSet = new Set(Object.values(chainIds))
