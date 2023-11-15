@@ -1,28 +1,33 @@
-import { logWarning, logSuccess, log, logFailure } from '../../logger'
-import msg from '../../utils/msg'
+import { logWarning, logSuccess, log, logFailure } from '../logger'
+import msg from '../utils/msg'
 import fs from 'fs'
 import path from 'path'
-import { sleep } from '../../utils/time'
-import { client } from '../../api/client'
-import { getSessionToken } from '../../utils/auth'
-import { getProjectCreds, getCurrentProjectId } from '../../config/global'
+import { sleep } from '../utils/time'
+import { fileExists } from '../utils/file'
+import { client } from '../api/client'
+import { getSessionToken } from '../utils/auth'
+import { getProjectCreds, getCurrentProjectId } from '../config/global'
 import ora from 'ora'
-import { PublishLiveObjectVersionJobStatus, StringKeyMap } from '../../types'
+import { PublishLiveObjectVersionJobStatus, StringKeyMap } from '../types'
 import chalk from 'chalk'
 import differ from 'ansi-diff-stream'
 
 const POLL_INTERVAL = 1000
 
-const CMD = 'object'
+const CMD = 'publish'
 
-function publishObjectCommand(cmd) {
-    cmd.command(CMD)
-        .argument('[objectName]', 'The full name of the live object folder', null)
-        .action(publishObject)
+function addPublishCmd(program) {
+    program
+        .command(CMD)
+        .description('Publish a Live Table')
+        .argument('folder', 'Folder of the Live Table')
+        .action(publish)
 }
 
-async function publishObject(objectName: string) {
-    // Get authed user's session token
+/**
+ * Publish a Live Table.
+ */
+async function publish(givenFolderPath: string) {
     const { token: sessionToken, error: sessionTokenError } = getSessionToken()
     if (sessionTokenError) {
         logFailure(sessionTokenError)
@@ -33,40 +38,32 @@ async function publishObject(objectName: string) {
         return
     }
 
-    let namespace, name, folder, version, manifestJson
-    try {
-        const manifestPath = path.join(process.cwd(), objectName, 'manifest.json')
-        const data = fs.readFileSync(manifestPath, 'utf8')
-        manifestJson = JSON.parse(data)
-        namespace = manifestJson.namespace
-        name = manifestJson.name
-        version = manifestJson.version
-        folder = objectName
-    } catch (err) {
-        logFailure(`Error reading manifest file: ${err}`)
+    const folderPath = path.join(process.cwd(), givenFolderPath)
+    const manifestPath = path.join(folderPath, 'manifest.json')
+    if (!fileExists(manifestPath)) {
+        logWarning(`No Live Table found at ${folderPath}`)
         return
     }
 
-    const data = await client.publishObject(
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'))
+    const { namespace, name, version } = manifest
+
+    const { uid, error } = await client.publishLiveObjectVersion(
         namespace,
         name,
-        folder,
         version,
-        sessionToken
+        givenFolderPath,
+        sessionToken,
     )
-    if (data.error) {
-        logFailure(`Error publishing object: ${data.error}`)
+    if (error) {
+        logFailure(`Error publishing Live Table: ${error}`)
         return
     }
-    if (data.uid) {
-        logFailure('Error: no job uid returned from api')
-        return
-    }
-    
-    await pollForPublishObjectResult(data.uid, sessionToken, manifestJson)
+
+    await pollForPublishResult(uid, sessionToken, manifest)
 }
 
-async function pollForPublishObjectResult(
+async function pollForPublishResult(
     uid: string,
     sessionToken: string,
     manifest: StringKeyMap
@@ -130,4 +127,4 @@ async function pollForPublishObjectResult(
     }
 }
 
-export default publishObjectCommand
+export default addPublishCmd

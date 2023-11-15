@@ -7,10 +7,11 @@ const prefix = {
     DEPLOYMENT: 'deployment',
     CONTRACT_INSTANCES: 'contract-instances',
     CONTRACT_REGISTRATION_JOB: 'contract-registration-job',
-    PUBLISH_OBJECT_VERSION_JOB: 'live-object-version-publish-job',
     CONTRACT: 'contract',
     ABI: 'abi',
-    LIVE_OBEJCT_VERSION: 'live-object-version',
+    EVENT_VERSION: 'event-version',
+    LIVE_OBJECT_VERSION: 'live-object-version',
+    PUBLISH_LIVE_OBJECT_VERSION_JOB: 'publish-live-object-version-job',
 }
 
 export const routes = {
@@ -21,11 +22,14 @@ export const routes = {
     GET_ABI: prefix.ABI,
     REGISTER_CONTRACTS: [prefix.CONTRACT_INSTANCES, 'register'].join('/'),
     GET_CONTRACT_REGISTRATION_JOB: prefix.CONTRACT_REGISTRATION_JOB,
-    GET_PUBLISH_OBJECT_VERSION_JOB_JOB: prefix.PUBLISH_OBJECT_VERSION_JOB,
     CREATE_CONTRACT_GROUP: [prefix.CONTRACT, 'group'].join('/'),
     GET_CONTRACT_GROUP: [prefix.CONTRACT, 'group'].join('/'),
     GET_CONTRACT_GROUP_EVENTS: [prefix.CONTRACT, 'group', 'events'].join('/'),
-    PUBLISH_OBJECT: [prefix.LIVE_OBEJCT_VERSION, 'publish'].join('/'),
+    RESOLVE_EVENT_VERSION_CURSORS: [prefix.EVENT_VERSION + 's', 'resolve', 'cursors'].join('/'),
+    GET_EVENT_VERSION_DATA_AFTER: [prefix.EVENT_VERSION + 's', 'data', 'after'].join('/'),
+    GET_LIVE_OBJECT_VERSION: prefix.LIVE_OBJECT_VERSION,
+    PUBLISH_LIVE_OBJECT_VERSION: [prefix.LIVE_OBJECT_VERSION, 'publish'].join('/'),
+    GET_PUBLISH_LIVE_OBJECT_VERSION_JOB: prefix.PUBLISH_LIVE_OBJECT_VERSION_JOB,
 }
 
 export const buildUrl = (route: string) => {

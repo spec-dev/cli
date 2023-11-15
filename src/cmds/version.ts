@@ -4,7 +4,7 @@ import { version as currentVersion } from '../version'
 const CMD = 'version'
 
 function addVersionCmd(program) {
-    program.command(CMD).action(version)
+    program.command(CMD).description('Show the current CLI version').action(version)
 }
 
 /**

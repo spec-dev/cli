@@ -6,21 +6,21 @@ import {
     LoginResponse,
     RegisterContractsResponse,
     GetContractRegistrationJobResponse,
-    GetPublishLiveObjectVersionJobResponse,
     GetAbiResponse,
     CreateContractGroupResponse,
     GetContractGroupResponse,
     GetContractGroupEventsResponse,
+    ResolveEventVersionCursorsResponse,
+    ResolveEventVersionDataAfterResponse,
+    GetPublishLiveObjectVersionJobResponse,
+    GetLiveObjectVersionResponse,
     StringMap,
     StringKeyMap,
+    LiveObjectVersion,
 } from '../types'
 
 const formatAuthHeader = (sessionToken: string): StringMap => ({
     [constants.USER_AUTH_HEADER_NAME]: sessionToken,
-})
-
-const formatApiKeyHeader = (apiKey: string): StringMap => ({
-    [constants.AUTH_HEADER_NAME]: apiKey,
 })
 
 async function login(email: string, password: string): Promise<LoginResponse> {
@@ -148,24 +148,44 @@ async function getContractGroupEvents(group: string): Promise<GetContractGroupEv
     const { error, data } = await get(buildUrl(routes.GET_CONTRACT_GROUP_EVENTS), {
         group,
     })
-
     return error ? { error } : { events: data?.events || [] }
 }
 
-async function publishObject(
-    namespace: string,
+async function resolveEventVersionCursors(
+    givenName: string
+): Promise<ResolveEventVersionCursorsResponse> {
+    const { error, data } = await post(buildUrl(routes.RESOLVE_EVENT_VERSION_CURSORS), {
+        givenName,
+    })
+    return error ? { error } : { cursors: data?.cursors || [], latestEvent: data?.latestEvent }
+}
+
+async function getEventVersionDataAfter(
+    cursors: StringKeyMap
+): Promise<ResolveEventVersionDataAfterResponse> {
+    const { error, data } = await post(buildUrl(routes.GET_EVENT_VERSION_DATA_AFTER), { cursors })
+    return error ? { error } : { events: data?.events || {} }
+}
+
+async function getLiveObjectVersion(id: string): Promise<GetLiveObjectVersionResponse> {
+    const { error, data } = await get(buildUrl(routes.GET_LIVE_OBJECT_VERSION), { id })
+    return error ? { error } : { lov: data as LiveObjectVersion }
+}
+
+async function publishLiveObjectVersion(
+    nsp: string,
     name: string,
-    folder: string,
     version: string,
-    sessionToken: string
+    folder: string,
+    sessionToken: string,
 ): Promise<StringMap> {
     const { data, error } = await post(
-        buildUrl(routes.PUBLISH_OBJECT),
+        buildUrl(routes.PUBLISH_LIVE_OBJECT_VERSION),
         {
-            nsp: namespace,
+            nsp,
             name,
-            folder,
             version,
+            folder,
         },
         formatAuthHeader(sessionToken)
     )
@@ -177,7 +197,7 @@ async function getPublishLiveObjectVersionJob(
     uid: string
 ): Promise<GetPublishLiveObjectVersionJobResponse> {
     const { data, error } = await get(
-        buildUrl(routes.GET_PUBLISH_OBJECT_VERSION_JOB_JOB),
+        buildUrl(routes.GET_PUBLISH_LIVE_OBJECT_VERSION_JOB),
         { uid },
         formatAuthHeader(sessionToken)
     )
@@ -194,6 +214,9 @@ export const client = {
     createContractGroup,
     getContractGroup,
     getContractGroupEvents,
-    publishObject,
+    resolveEventVersionCursors,
+    getEventVersionDataAfter,
+    getLiveObjectVersion,
+    publishLiveObjectVersion,
     getPublishLiveObjectVersionJob,
 }

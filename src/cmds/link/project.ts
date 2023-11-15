@@ -12,13 +12,14 @@ const CMD = 'project'
 
 function addProjectCmd(cmd) {
     cmd.command(CMD)
+        .description('Set the local path for a project')
         .argument('project', 'The project to link in <namespace>/<project> format')
         .argument('directory', 'Local path to the project (should contain a ".spec/" folder)')
         .action(linkProject)
 }
 
 /**
- * Set the local location for an existing Spec project.
+ * Set the local path for a project.
  */
 async function linkProject(projectPath: string, localPath: string) {
     // Ensure specified location actually exists.
@@ -31,12 +32,12 @@ async function linkProject(projectPath: string, localPath: string) {
     // Pull the project and set it as the current one.
     const useProjectResp = await useProject(projectPath, false)
     if (!useProjectResp) return
-    const { id: projectId, metadata } = useProjectResp
+    const { id: projectId } = useProjectResp
 
     // (If needed) create new Spec config directory + project/connection config files.
     const specConfigDir = path.join(location, constants.SPEC_CONFIG_DIR_NAME)
     if (!fileExists(specConfigDir)) {
-        createNewSpecConfig(specConfigDir, metadata.defaultDbUrl)
+        createNewSpecConfig(specConfigDir)
         logSuccess('Inititalized new Spec project.')
 
         // Add connect.toml to .gitignore if file exists.

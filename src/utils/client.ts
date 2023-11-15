@@ -4,7 +4,8 @@ import constants from '../constants'
 import path from 'path'
 import { sleep } from './time'
 import { fileExists } from './file'
-import { getCurrentDbUser } from '../db'
+import { resolveDBConnectionParams, clearEventCursors } from '../db'
+import { asPostgresUrl } from '../utils/formatters'
 
 export function specClientInstalled(): boolean {
     try {
@@ -22,30 +23,26 @@ export async function startSpec(
     projectApiKey: string,
     dbConfig: StringKeyMap
 ): Promise<StringKeyMap> {
-    let dbUser = dbConfig.user
-    if (!dbUser) {
-        const { data: user, error } = getCurrentDbUser()
-        if (error) return { error }
-        dbUser = user
-    }
-    if (!dbUser) {
-        return { error: `Database user not specified.` }
-    }
+    const { data: connParams, error: formatError } = resolveDBConnectionParams(dbConfig)
+    if (formatError) return { error: formatError }
+
+    // Wipe any event cursors for now when running locally.
+    const url = asPostgresUrl(connParams)
+    clearEventCursors(url)
 
     const args = [
         ['--config-dir', specConfigDir],
-        ['--user', dbUser],
-        ['--host', dbConfig.host || 'localhost'],
-        ['--port', Number(dbConfig.port || constants.DB_PORT)],
-        ['--name', dbConfig.name || 'postgres'],
+        ['--user', connParams.user],
+        ['--host', connParams.host],
+        ['--port', connParams.port],
+        ['--name', connParams.name],
         ['--id', projectId],
         ['--api-key', projectApiKey],
         ['--debug', 'true'],
     ].flat()
 
-    const dbPassword = dbConfig.password || ''
-    if (dbPassword) {
-        args.push(...['--password', dbPassword])
+    if (connParams.password) {
+        args.push(...['--password', connParams.password])
     }
 
     try {

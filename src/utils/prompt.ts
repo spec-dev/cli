@@ -177,7 +177,7 @@ export async function promptAddContractsDetails(
     }
 
     // Optional
-    abi = stripWrappedQuotes((await qoa.prompt([OPTIONAL_ABI_PROMPT])).abi)
+    abi = abi || stripWrappedQuotes((await qoa.prompt([OPTIONAL_ABI_PROMPT])).abi)
 
     return { addresses, chainId, group, abi }
 }

@@ -7,6 +7,7 @@ import {
     upsertDenoImports,
     upsertLiveObject,
 } from './liveObjectTemplate'
+import { upsertPostgraphilerc } from './postgraphilercTemplate'
 
 export function createLiveObjectTemplate(
     namespace: string,
@@ -22,4 +23,8 @@ export function createLiveObjectTemplate(
     upsertDenoConfig(cwd)
     upsertDenoImports(cwd)
     return upsertLiveObject(cwd, namespace, name, chains, displayName, description)
+}
+
+export function createPostgraphileTemplate(specProjectConfigDir: string) {
+    return upsertPostgraphilerc(specProjectConfigDir)
 }

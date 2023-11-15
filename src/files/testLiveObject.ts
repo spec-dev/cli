@@ -12,7 +12,7 @@ import {
     TableSpec,
     ColumnSpec,
     BigInt,
-} from 'https://esm.sh/@spec.dev/core@0.0.106'
+} from 'https://esm.sh/@spec.dev/core@0.0.133'
 import { createEventClient, SpecEventClient } from 'https://esm.sh/@spec.dev/event-client@0.0.16'
 import {
     buildSelectQuery,
@@ -28,6 +28,12 @@ const chainNamespaces = {
     GOERLI: 'goerli',
     POLYGON: 'polygon',
     MUMBAI: 'mumbai',
+    BASE: 'base',
+    OPTIMISM: 'optimism',
+    ARBITRUM: 'arbitrum',
+    PGN: 'pgn',
+    CELO: 'celo',
+    LINEA: 'linea',
 }
 
 const chainIds = {
@@ -35,6 +41,12 @@ const chainIds = {
     GOERLI: '5',
     POLYGON: '137',
     MUMBAI: '80001',
+    BASE: '8453',
+    OPTIMISM: '10',
+    ARBITRUM: '42161',
+    PGN: '424',
+    CELO: '42220',
+    LINEA: '59144',
 }
 
 const nspForChainId = {
@@ -42,6 +54,12 @@ const nspForChainId = {
     [chainIds.GOERLI]: chainNamespaces.GOERLI,
     [chainIds.POLYGON]: chainNamespaces.POLYGON,
     [chainIds.MUMBAI]: chainNamespaces.MUMBAI,
+    [chainIds.BASE]: chainNamespaces.BASE,
+    [chainIds.OPTIMISM]: chainNamespaces.OPTIMISM,
+    [chainIds.ARBITRUM]: chainNamespaces.ARBITRUM,
+    [chainIds.PGN]: chainNamespaces.PGN,
+    [chainIds.CELO]: chainNamespaces.CELO,
+    [chainIds.LINEA]: chainNamespaces.LINEA,
 }
 
 const codes = {
@@ -362,7 +380,9 @@ async function buildLiveObjectsMap(
     for (const { name, specFilePath } of liveObjects) {
         const LiveObjectClass = await importLiveObject(specFilePath)
         const liveObjectInstance = new LiveObjectClass()
-        const chainNsps = await getLiveObjectChainNamespaces(specFilePath)
+        const manifest = (await readManifest(specFilePath)) || {}
+        const chainNsps = (manifest.chains || []).map((id) => nspForChainId[id]).filter((v) => !!v)
+        const runBefore = manifest.runBefore || []
         const resolvesMetadata = await doesLiveObjectResolveMetadata(specFilePath)
 
         const inputEventNames = await resolveInputsForLiveObject(
@@ -405,6 +425,7 @@ async function buildLiveObjectsMap(
             inputCallNames,
             inputContractGroupAbis,
             resolvesMetadata,
+            runBefore,
         }
     }
     return liveObjectsMap
@@ -534,11 +555,6 @@ function buildQueryFromPayload(payload: StringKeyMap): QueryPayload | null {
     }
 
     return null
-}
-
-async function getLiveObjectChainNamespaces(specFilePath: string): Promise<string[]> {
-    const { chains } = (await readManifest(specFilePath)) || {}
-    return chains.map((id) => nspForChainId[id]).filter((v) => !!v)
 }
 
 async function resolveInputsForLiveObject(
@@ -1322,6 +1338,7 @@ async function handleInput(
     log: boolean = true
 ) {
     input.origin.blockNumber = BigInt.from(input.origin.blockNumber)
+    input.origin.blockTimestamp = new Date(input.origin.blockTimestamp)
     const logPrefix = chalk.gray(`${liveObjectName} |`)
 
     // Create the Live Object with queues to capture
@@ -1647,6 +1664,8 @@ async function processTestDataInputs(
         if (resolvesMetadata) {
             console.log(chalk.dim(`   ${i} / ${chalk.green(inputs.length)}`))
         }
+
+        // const sortedLiveObjectFilePaths = (inputsMap[input.name] || []).sort(())
 
         for (const specFilePath of inputsMap[input.name] || []) {
             const liveObject = liveObjectsMap[specFilePath]

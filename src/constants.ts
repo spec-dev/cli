@@ -11,12 +11,17 @@ const constants: StringKeyMap = {
     MIGRATIONS_DIR_NAME: 'migrations',
     HANDLERS_DIR_NAME: 'handlers',
     HOOKS_DIR_NAME: 'hooks',
+    GRAPHQL_DIR_NAME: 'graphql',
 
     // Global CLI config.
     SPEC_GLOBAL_DIR: path.join(os.homedir(), '.spec'),
     SPEC_GLOBAL_STATE_FILE_NAME: 'state.toml',
     SPEC_GLOBAL_CREDS_FILE_NAME: 'creds.toml',
     SPEC_GLOBAL_PROJECTS_FILE_NAME: 'projects.toml',
+
+    // Spec base/ecosystem and docs.
+    SPEC_ORIGIN: ev('SPEC_ORIGIN', 'https://spec.dev'),
+    DOCS_ORIGIN: ev('SPEC_DOCS_ORIGIN', 'https://docs.spec.dev'),
 
     // Spec API config.
     SPEC_API_ORIGIN: ev('SPEC_API_ORIGIN', 'https://api.spec.dev'),
@@ -28,8 +33,8 @@ const constants: StringKeyMap = {
     SPEC_DB_USER: 'spec',
     DB_PORT: 5432,
 
-    // Local Live Object testing.
-    LIVE_OBJECT_TESTING_DB_NAME: 'live-object-testing',
+    // Live Table testing.
+    LIVE_OBJECT_TESTING_DB_NAME: 'spec-test',
     LIVE_OBJECT_TESTING_API_PORT: 8000,
 
     // Desktop app name.
@@ -61,7 +66,6 @@ constants.SPEC_GLOBAL_PROJECTS_PATH = path.join(
     constants.SPEC_GLOBAL_PROJECTS_FILE_NAME
 )
 constants.SPEC_GLOBAL_COMPOSE_DIR = path.join(constants.SPEC_GLOBAL_DIR, 'compose')
-constants.SPEC_MIGRATIONS_DIR = path.join(constants.SPEC_CONFIG_DIR, constants.MIGRATIONS_DIR_NAME)
 constants.SPEC_HANDLERS_DIR = path.join(constants.SPEC_CONFIG_DIR, constants.HANDLERS_DIR_NAME)
 constants.SPEC_HOOKS_DIR = path.join(constants.SPEC_CONFIG_DIR, constants.HOOKS_DIR_NAME)
 

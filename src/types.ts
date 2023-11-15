@@ -76,6 +76,22 @@ export interface GetContractGroupEventsResponse {
     events?: StringKeyMap[]
 }
 
+export interface ResolveEventVersionCursorsResponse {
+    error?: string
+    cursors?: StringKeyMap[]
+    latestEvent?: StringKeyMap
+}
+
+export interface ResolveEventVersionDataAfterResponse {
+    error?: string
+    events?: StringKeyMap
+}
+
+export interface GetLiveObjectVersionResponse {
+    error?: string
+    lov?: LiveObjectVersion
+}
+
 export enum ContractRegistrationJobStatus {
     Created = 'created',
     Decoding = 'decoding',
@@ -105,5 +121,20 @@ export enum LogLevel {
 
 export interface Migration {
     name: string
-    version: string
+    version: number
+}
+
+export interface LiveObjectVersion {
+    id: string
+    name: string
+    properties: LiveObjectVersionProperty[]
+    primaryTimestampProperty: string
+    uniqueBy: string[]
+    createdAt: string
+}
+
+export interface LiveObjectVersionProperty {
+    name: string
+    type: string
+    desc: string
 }

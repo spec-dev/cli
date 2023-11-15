@@ -9,12 +9,13 @@ const CMD = 'project'
 
 function addProjectCmd(cmd) {
     cmd.command(CMD)
+        .description('Set the current project')
         .argument('project', 'Spec project to use in <namespace>/<project> format')
         .action(useProject)
 }
 
 /**
- * Set a Spec project as the "current" project.
+ * Set the current project.
  */
 export async function useProject(projectPath: string, logResult: boolean = true) {
     // Split input into namespace/project.
