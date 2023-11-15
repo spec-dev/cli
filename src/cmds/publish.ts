@@ -6,7 +6,6 @@ import { sleep } from '../utils/time'
 import { fileExists } from '../utils/file'
 import { client } from '../api/client'
 import { getSessionToken } from '../utils/auth'
-import { getProjectCreds, getCurrentProjectId } from '../config/global'
 import ora from 'ora'
 import { PublishLiveObjectVersionJobStatus, StringKeyMap } from '../types'
 import chalk from 'chalk'
@@ -41,7 +40,7 @@ async function publish(givenFolderPath: string) {
     const folderPath = path.join(process.cwd(), givenFolderPath)
     const manifestPath = path.join(folderPath, 'manifest.json')
     if (!fileExists(manifestPath)) {
-        logWarning(`No Live Table found at ${folderPath}`)
+        logWarning(`No Live Table found within ${folderPath}`)
         return
     }
 
@@ -53,7 +52,7 @@ async function publish(givenFolderPath: string) {
         name,
         version,
         givenFolderPath,
-        sessionToken,
+        sessionToken
     )
     if (error) {
         logFailure(`Error publishing Live Table: ${error}`)
@@ -63,11 +62,7 @@ async function publish(givenFolderPath: string) {
     await pollForPublishResult(uid, sessionToken, manifest)
 }
 
-async function pollForPublishResult(
-    uid: string,
-    sessionToken: string,
-    manifest: StringKeyMap
-) {
+async function pollForPublishResult(uid: string, sessionToken: string, manifest: StringKeyMap) {
     const spinnerText = `Publishing Live Object ${manifest.namespace} ${manifest.name} ${manifest.version}`
 
     const diff = differ()
@@ -113,13 +108,11 @@ async function pollForPublishResult(
             logProgress(`Block Time: ${cursor}`)
             spinner.text = `Indexing events for ${nsp} ${name} ${version}`
         }
-        
+
         if (status === PublishLiveObjectVersionJobStatus.Complete) {
             logProgress(cursor, true)
             spinner.stop()
-            logSuccess(
-                `Published ${nsp} ${name} ${version} to SPEC platform.`
-            )
+            logSuccess(`Published ${nsp} ${name} ${version} to SPEC platform.`)
             return
         }
 

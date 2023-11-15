@@ -177,7 +177,7 @@ async function publishLiveObjectVersion(
     name: string,
     version: string,
     folder: string,
-    sessionToken: string,
+    sessionToken: string
 ): Promise<StringMap> {
     const { data, error } = await post(
         buildUrl(routes.PUBLISH_LIVE_OBJECT_VERSION),
