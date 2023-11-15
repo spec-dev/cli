@@ -5,11 +5,15 @@ import path from 'path'
 import { sleep } from '../utils/time'
 import { fileExists } from '../utils/file'
 import { client } from '../api/client'
+import { toNamespacedVersion, toLiveTableUrl } from '../utils/formatters'
 import { getSessionToken } from '../utils/auth'
 import ora from 'ora'
 import { PublishLiveObjectVersionJobStatus, StringKeyMap } from '../types'
 import chalk from 'chalk'
 import differ from 'ansi-diff-stream'
+import progress from 'progress-string'
+import open from 'open'
+import { formatDate } from '../utils/date'
 
 const POLL_INTERVAL = 1000
 
@@ -20,13 +24,14 @@ function addPublishCmd(program) {
         .command(CMD)
         .description('Publish a Live Table')
         .argument('folder', 'Folder of the Live Table')
+        .option('--open', 'Open the Live Table in the Spec ecosytem once published')
         .action(publish)
 }
 
 /**
  * Publish a Live Table.
  */
-async function publish(givenFolderPath: string) {
+async function publish(givenFolderPath: string, opts: StringKeyMap) {
     const { token: sessionToken, error: sessionTokenError } = getSessionToken()
     if (sessionTokenError) {
         logFailure(sessionTokenError)
@@ -59,18 +64,38 @@ async function publish(givenFolderPath: string) {
         return
     }
 
-    await pollForPublishResult(uid, sessionToken, manifest)
+    await pollForPublishResult(namespace, uid, sessionToken, manifest, opts)
 }
 
-async function pollForPublishResult(uid: string, sessionToken: string, manifest: StringKeyMap) {
-    const spinnerText = `Publishing Live Object ${manifest.namespace} ${manifest.name} ${manifest.version}`
+async function pollForPublishResult(
+    nsp: string,
+    uid: string,
+    sessionToken: string,
+    manifest: StringKeyMap,
+    opts: StringKeyMap
+) {
+    const namespacedVersion = toNamespacedVersion(
+        manifest.namespace,
+        manifest.name,
+        manifest.version
+    )
 
+    const progressBar = progress({
+        width: 40,
+        total: 1,
+        incomplete: ' ',
+        complete: '.',
+    })
+
+    const spinnerText = `Publishing ${namespacedVersion}`
     const diff = differ()
 
-    const logProgress = (cursor?: string, done?: boolean) => {
+    const logProgress = (value: number, cursor: Date, done?: boolean) => {
         const lines = []
+        const date = formatDate(cursor)
         lines.push(chalk.gray(chalk.dim('...' + ' '.repeat(spinnerText.length))))
-        lines.push(cursor)
+        const suffix = value === 1 ? chalk.cyanBright(date) : date
+        lines.push(`${namespacedVersion} ${chalk.cyan(progressBar(value))} ${suffix}`)
         lines.push(chalk.gray(chalk.dim('...')))
         diff.write(lines.join('\n'))
     }
@@ -83,36 +108,49 @@ async function pollForPublishResult(uid: string, sessionToken: string, manifest:
 
     // Poll for progress of the publishing live object job.
     while (true) {
-        const { nsp, name, version, status, cursor, failed, error } =
+        const { status, cursor, metadata, failed, error } =
             await client.getPublishLiveObjectVersionJob(sessionToken, uid)
+        if (error && error.toLowerCase().includes('parsing json')) continue
 
         // Job failed.
         if (failed || error) {
             spinner.stop()
-            logFailure(error || 'Publishing Live Object failed.')
+            logFailure(error || 'Publishing Live Table failed.')
             return
         }
 
-        // Running migrations on shared tables.
-        if (status === PublishLiveObjectVersionJobStatus.Migrating) {
-            logProgress(cursor)
-            spinner.text = `Running shared-table migrations for ${nsp} ${name} ${version}`
-        }
-
-        if (status === PublishLiveObjectVersionJobStatus.Publishing) {
-            logProgress(cursor)
-            spinner.text = `Publishing core tables for ${nsp} ${name} ${version}`
-        }
-
+        // Indexing.
         if (status === PublishLiveObjectVersionJobStatus.Indexing) {
-            logProgress(`Block Time: ${cursor}`)
-            spinner.text = `Indexing events for ${nsp} ${name} ${version}`
+            if (metadata.startCursor) {
+                const start = new Date(metadata.startCursor).getTime()
+                const currentCursor = new Date(cursor || start)
+                const current = currentCursor.getTime()
+                const end = new Date().getTime()
+                const total = end - start
+                const progress = current - start
+                const fraction = progress / total
+                logProgress(fraction, currentCursor)
+            }
+            spinner.text = `Indexing Live Table`
         }
 
+        // Done.
         if (status === PublishLiveObjectVersionJobStatus.Complete) {
-            logProgress(cursor, true)
+            logProgress(1, new Date(cursor))
             spinner.stop()
-            logSuccess(`Published ${nsp} ${name} ${version} to SPEC platform.`)
+
+            let message = `Successfully published ${namespacedVersion}`
+            let liveTableUrl
+            if (metadata.liveObjectUid) {
+                liveTableUrl = toLiveTableUrl(nsp, metadata.liveObjectUid)
+                message += `\nView live:\n    ${liveTableUrl}`
+            }
+            logSuccess(message)
+
+            if (opts.open && liveTableUrl) {
+                await open(liveTableUrl)
+            }
+
             return
         }
 

@@ -56,6 +56,7 @@ export interface GetPublishLiveObjectVersionJobResponse {
     version?: string
     status?: PublishLiveObjectVersionJobStatus
     cursor?: string
+    metadata?: any
     failed?: boolean
     error?: string
     createdAt?: string
