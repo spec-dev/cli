@@ -139,13 +139,13 @@ async function pollForPublishResult(
             logProgress(1, new Date(cursor))
             spinner.stop()
 
-            let message = `Successfully published ${namespacedVersion}`
+            logSuccess(`Successfully published ${namespacedVersion}`)
             let liveTableUrl
             if (metadata.liveObjectUid) {
                 liveTableUrl = toLiveTableUrl(nsp, metadata.liveObjectUid)
-                message += `\nView live:\n    ${liveTableUrl}`
+                log(chalk.dim('View live:'))
+                log(liveTableUrl)
             }
-            logSuccess(message)
 
             if (opts.open && liveTableUrl) {
                 await open(liveTableUrl)
