@@ -11,6 +11,7 @@ export const chainIds: StringMap = {
     PGN: '424',
     CELO: '42220',
     LINEA: '59144',
+    SEPOLIA: '11155111',
 }
 
 export const chainNameForId = {
@@ -24,6 +25,7 @@ export const chainNameForId = {
     [chainIds.PGN]: 'pgn',
     [chainIds.CELO]: 'celo',
     [chainIds.LINEA]: 'linea',
+    [chainIds.SEPOLIA]: 'sepolia',
 }
 
 export const chainIdsSet = new Set(Object.values(chainIds))

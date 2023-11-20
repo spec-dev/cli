@@ -11,6 +11,7 @@ const prefix = {
     ABI: 'abi',
     EVENT_VERSION: 'event-version',
     LIVE_OBJECT_VERSION: 'live-object-version',
+    PUBLISH_LIVE_OBJECT_VERSION_JOB: 'publish-live-object-version-job',
 }
 
 export const routes = {
@@ -27,6 +28,8 @@ export const routes = {
     RESOLVE_EVENT_VERSION_CURSORS: [prefix.EVENT_VERSION + 's', 'resolve', 'cursors'].join('/'),
     GET_EVENT_VERSION_DATA_AFTER: [prefix.EVENT_VERSION + 's', 'data', 'after'].join('/'),
     GET_LIVE_OBJECT_VERSION: prefix.LIVE_OBJECT_VERSION,
+    PUBLISH_LIVE_OBJECT_VERSION: [prefix.LIVE_OBJECT_VERSION, 'publish'].join('/'),
+    GET_PUBLISH_LIVE_OBJECT_VERSION_JOB: prefix.PUBLISH_LIVE_OBJECT_VERSION_JOB,
 }
 
 export const buildUrl = (route: string) => {

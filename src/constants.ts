@@ -27,6 +27,8 @@ const constants: StringKeyMap = {
     SPEC_API_ORIGIN: ev('SPEC_API_ORIGIN', 'https://api.spec.dev'),
     USER_AUTH_HEADER_NAME: 'Spec-User-Auth-Token',
 
+    AUTH_HEADER_NAME: 'Spec-Auth-Token',
+
     // DB defaults.
     SPEC_DB_USER: 'spec',
     DB_PORT: 5432,

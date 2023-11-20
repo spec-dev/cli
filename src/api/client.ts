@@ -12,6 +12,7 @@ import {
     GetContractGroupEventsResponse,
     ResolveEventVersionCursorsResponse,
     ResolveEventVersionDataAfterResponse,
+    GetPublishLiveObjectVersionJobResponse,
     GetLiveObjectVersionResponse,
     StringMap,
     StringKeyMap,
@@ -171,6 +172,38 @@ async function getLiveObjectVersion(id: string): Promise<GetLiveObjectVersionRes
     return error ? { error } : { lov: data as LiveObjectVersion }
 }
 
+async function publishLiveObjectVersion(
+    nsp: string,
+    name: string,
+    version: string,
+    folder: string,
+    sessionToken: string
+): Promise<StringMap> {
+    const { data, error } = await post(
+        buildUrl(routes.PUBLISH_LIVE_OBJECT_VERSION),
+        {
+            nsp,
+            name,
+            version,
+            folder,
+        },
+        formatAuthHeader(sessionToken)
+    )
+    return error ? { error } : data
+}
+
+async function getPublishLiveObjectVersionJob(
+    sessionToken: string,
+    uid: string
+): Promise<GetPublishLiveObjectVersionJobResponse> {
+    const { data, error } = await get(
+        buildUrl(routes.GET_PUBLISH_LIVE_OBJECT_VERSION_JOB),
+        { uid },
+        formatAuthHeader(sessionToken)
+    )
+    return error ? { error } : data
+}
+
 export const client = {
     login,
     getProject,
@@ -184,4 +217,6 @@ export const client = {
     resolveEventVersionCursors,
     getEventVersionDataAfter,
     getLiveObjectVersion,
+    publishLiveObjectVersion,
+    getPublishLiveObjectVersionJob,
 }

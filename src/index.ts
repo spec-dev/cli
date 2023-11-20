@@ -21,6 +21,7 @@ import addMigrateCmd from './cmds/migrate'
 import addEnableCmd from './cmds/enable'
 import addRunCmd from './cmds/run'
 import addDocsCmd from './cmds/docs'
+import addPublishCmd from './cmds/publish'
 
 addAddCmd(program)
 addCreateCmd(program)
@@ -38,6 +39,7 @@ addLoginCmd(program)
 addLogoutCmd(program)
 addLogsCmd(program)
 addOpenCmd(program)
+addPublishCmd(program)
 addMigrateCmd(program)
 addStartCmd(program)
 addTailCmd(program)

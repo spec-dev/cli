@@ -40,7 +40,7 @@ const denoConfigContents = `{
 
 const denoImportsContents = `{
     "imports": {
-        "@spec.dev/core": "https://esm.sh/@spec.dev/core@0.0.133"
+        "@spec.dev/core": "https://esm.sh/@spec.dev/core@0.0.138"
     }
 }`
 

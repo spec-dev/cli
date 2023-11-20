@@ -107,3 +107,6 @@ export const toNamespaceSlug = (value: string): string => {
 }
 
 export const toSpecNamespaceUrl = (nsp: string) => [constants.SPEC_ORIGIN, nsp].join('/')
+
+export const toLiveTableUrl = (nsp: string, uid: string): string =>
+    `https://spec.dev/${nsp}/live-table/${uid}`

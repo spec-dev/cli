@@ -12,7 +12,7 @@ import {
     TableSpec,
     ColumnSpec,
     BigInt,
-} from 'https://esm.sh/@spec.dev/core@0.0.133'
+} from 'https://esm.sh/@spec.dev/core@0.0.138'
 import { createEventClient, SpecEventClient } from 'https://esm.sh/@spec.dev/event-client@0.0.16'
 import {
     buildSelectQuery,
@@ -34,6 +34,7 @@ const chainNamespaces = {
     PGN: 'pgn',
     CELO: 'celo',
     LINEA: 'linea',
+    SEPOLIA: 'sepolia',
 }
 
 const chainIds = {
@@ -47,6 +48,7 @@ const chainIds = {
     PGN: '424',
     CELO: '42220',
     LINEA: '59144',
+    SEPOLIA: '11155111',
 }
 
 const nspForChainId = {
@@ -60,6 +62,7 @@ const nspForChainId = {
     [chainIds.PGN]: chainNamespaces.PGN,
     [chainIds.CELO]: chainNamespaces.CELO,
     [chainIds.LINEA]: chainNamespaces.LINEA,
+    [chainIds.SEPOLIA]: chainNamespaces.SEPOLIA,
 }
 
 const codes = {
