@@ -23,48 +23,6 @@ import {
 } from 'https://esm.sh/@spec.dev/qb@0.0.4'
 import short from 'https://esm.sh/short-uuid@4.2.0'
 
-const chainNamespaces = {
-    ETHEREUM: 'eth',
-    GOERLI: 'goerli',
-    POLYGON: 'polygon',
-    MUMBAI: 'mumbai',
-    BASE: 'base',
-    OPTIMISM: 'optimism',
-    ARBITRUM: 'arbitrum',
-    PGN: 'pgn',
-    CELO: 'celo',
-    LINEA: 'linea',
-    SEPOLIA: 'sepolia',
-}
-
-const chainIds = {
-    ETHEREUM: '1',
-    GOERLI: '5',
-    POLYGON: '137',
-    MUMBAI: '80001',
-    BASE: '8453',
-    OPTIMISM: '10',
-    ARBITRUM: '42161',
-    PGN: '424',
-    CELO: '42220',
-    LINEA: '59144',
-    SEPOLIA: '11155111',
-}
-
-const nspForChainId = {
-    [chainIds.ETHEREUM]: chainNamespaces.ETHEREUM,
-    [chainIds.GOERLI]: chainNamespaces.GOERLI,
-    [chainIds.POLYGON]: chainNamespaces.POLYGON,
-    [chainIds.MUMBAI]: chainNamespaces.MUMBAI,
-    [chainIds.BASE]: chainNamespaces.BASE,
-    [chainIds.OPTIMISM]: chainNamespaces.OPTIMISM,
-    [chainIds.ARBITRUM]: chainNamespaces.ARBITRUM,
-    [chainIds.PGN]: chainNamespaces.PGN,
-    [chainIds.CELO]: chainNamespaces.CELO,
-    [chainIds.LINEA]: chainNamespaces.LINEA,
-    [chainIds.SEPOLIA]: chainNamespaces.SEPOLIA,
-}
-
 const codes = {
     SUCCESS: 200,
     BAD_REQUEST: 400,
@@ -80,8 +38,6 @@ const routes = {
 
 const REQUEST_TIMEOUT = 30000
 const AUTH_HEADER_NAME = 'Spec-Auth-Token'
-
-const CONTRACTS_EVENT_NSP = 'contracts'
 
 const liveObjectFileNames = {
     SPEC: 'spec.ts',
@@ -384,13 +340,11 @@ async function buildLiveObjectsMap(
         const LiveObjectClass = await importLiveObject(specFilePath)
         const liveObjectInstance = new LiveObjectClass()
         const manifest = (await readManifest(specFilePath)) || {}
-        const chainNsps = (manifest.chains || []).map((id) => nspForChainId[id]).filter((v) => !!v)
         const runBefore = manifest.runBefore || []
         const resolvesMetadata = await doesLiveObjectResolveMetadata(specFilePath)
 
         const inputEventNames = await resolveInputsForLiveObject(
             liveObjectInstance._eventHandlers,
-            chainNsps,
             routes.RESOLVE_EVENT_VERSIONS,
             'event',
             apiKey
@@ -399,7 +353,6 @@ async function buildLiveObjectsMap(
 
         const inputCallNames = await resolveInputsForLiveObject(
             liveObjectInstance._callHandlers,
-            chainNsps,
             routes.RESOLVE_CALL_VERSIONS,
             'contract function call',
             apiKey
@@ -418,7 +371,6 @@ async function buildLiveObjectsMap(
             }
             inputContractGroupAbis[group] = data.abi
         }
-
         liveObjectsMap[specFilePath] = {
             name,
             specFilePath,
@@ -562,34 +514,11 @@ function buildQueryFromPayload(payload: StringKeyMap): QueryPayload | null {
 
 async function resolveInputsForLiveObject(
     registeredHandlers: StringKeyMap,
-    chainNsps: string[],
     route: string,
     subject: string,
     apiKey: string
 ): Promise<string[] | null> {
-    const inputNames = []
-    const uniqueChainAgnosticInputs: StringKeyMap = {}
-
-    for (const givenName in registeredHandlers) {
-        let fullName = givenName
-
-        // Add a missing "contracts." prefix if missing.
-        if (givenName.split('.').length === 3) {
-            fullName = `${CONTRACTS_EVENT_NSP}.${fullName}`
-        }
-
-        // Subscribe to inputs on all chains the live object
-        // is associated with if chain is not specified.
-        if (fullName.startsWith(`${CONTRACTS_EVENT_NSP}.`)) {
-            uniqueChainAgnosticInputs['.' + fullName.split('.').slice(1).join('.')] = givenName
-            for (const nsp of chainNsps) {
-                inputNames.push([nsp, fullName].join('.'))
-            }
-        } else {
-            inputNames.push(fullName)
-            uniqueChainAgnosticInputs[fullName] = givenName
-        }
-    }
+    const inputNames = Object.keys(registeredHandlers)
     if (!inputNames.length) return []
 
     const { data: inputVersionsMap, error } = await resolveInputVersions(inputNames, route, apiKey)
@@ -600,17 +529,17 @@ async function resolveInputsForLiveObject(
 
     // Ensure each input is registered with at least 1 chain.
     const resolvedEventVersionNames = Object.values(inputVersionsMap) as string[]
-    for (const [maybePartialName, givenName] of Object.entries(uniqueChainAgnosticInputs)) {
+    for (const inputName of inputNames) {
         let found = false
         for (const resolvedName of resolvedEventVersionNames) {
-            if (resolvedName.includes(maybePartialName)) {
+            if (resolvedName.includes(inputName)) {
                 found = true
                 break
             }
         }
         if (!found) {
             console.error(
-                chalk.yellow(`No ${subject} is currently registered that matches "${givenName}"`)
+                chalk.yellow(`No ${subject} is currently registered that matches "${inputName}"`)
             )
             return null
         }
