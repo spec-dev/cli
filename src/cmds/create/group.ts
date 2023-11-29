@@ -2,7 +2,6 @@ import { getSessionToken } from '../../utils/auth'
 import { log, logFailure, logSuccess, logWarning } from '../../logger'
 import msg from '../../utils/msg'
 import { client } from '../../api/client'
-import { chainIdsSet } from '../../utils/chains'
 import { isValidContractGroup } from '../../utils/validators'
 import { resolveAbi } from '../../utils/abi'
 import { promptCreateContractGroupDetails } from '../../utils/prompt'
@@ -13,8 +12,8 @@ function addCreateGroupCmd(cmd) {
     cmd.command(CMD)
         .description('Create a new Contract Group')
         .argument('[group]', 'Name of the contract group in "nsp.ContractName" format', null)
-        .option('--chains <chains>', `The chain ids of the group's future contracts`, null)
         .option('--abi <abi>', `Path to the group's ABI`, null)
+        .option('--factory-group', `Whether this group holds factory-produced contracts`)
         .action(createGroup)
 }
 
@@ -24,8 +23,8 @@ function addCreateGroupCmd(cmd) {
 async function createGroup(
     group: string,
     opts: {
-        chains: string
         abi: string
+        factoryGroup: boolean
     }
 ) {
     // Get authed user's session token (if any).
@@ -40,7 +39,7 @@ async function createGroup(
     }
 
     // Prompt user for inputs if not given directly.
-    const promptResp = await promptCreateContractGroupDetails(group, opts.chains, opts.abi)
+    const promptResp = await promptCreateContractGroupDetails(group, opts.abi, opts.factoryGroup)
 
     // Validate contract group structure (e.g. "nsp.ContractName")
     if (!isValidContractGroup(promptResp.group)) {
@@ -55,27 +54,16 @@ async function createGroup(
     const { abi, isValid: isAbiValid } = resolveAbi(promptResp.abi)
     if (!isAbiValid) return
 
-    // Validate chain ids.
-    const chainIds = (promptResp.chainIds || '')
-        .split(',')
-        .map((id) => id.trim())
-        .filter((id) => !!id)
-    const invalidChainIds = chainIds.filter((id) => !chainIdsSet.has(id))
-    if (invalidChainIds.length) {
-        logWarning(`Invalid chain ids: ${invalidChainIds.join(', ')}`)
-        return
-    }
-
     // Create empty contract group.
     const { error: createError } = await client.createContractGroup(
         sessionToken,
-        chainIds,
         nsp,
         contractName,
-        abi
+        promptResp.isFactoryGroup,
+        abi,
     )
     if (createError) {
-        logFailure(`Creating group failed -- ${createError}`)
+        logFailure(`Creating group failed: ${createError}`)
         return
     }
 

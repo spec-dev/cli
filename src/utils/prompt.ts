@@ -74,6 +74,12 @@ const CONTRACT_ADDRESSES_PROMPT = {
     handle: 'addresses',
 }
 
+const IS_FACTORY_GROUP_PROMPT = {
+    type: 'input',
+    query: `${chalk.gray('?')} Is this group dynamically added to? ${chalk.gray(`(y/n):`)}`,
+    handle: 'isFactoryGroup',
+}
+
 function stripWrappedQuotes(val: string): string {
     if (!val) return val
     if (val[0] === '"') {
@@ -134,8 +140,8 @@ export async function promptNewLiveObjectDetails(
 
 export async function promptCreateContractGroupDetails(
     group?: string,
-    chainIds?: string,
-    abi?: string
+    abi?: string,
+    isFactoryGroup?: boolean
 ): Promise<StringKeyMap> {
     // Required
     while (!group) {
@@ -143,16 +149,18 @@ export async function promptCreateContractGroupDetails(
     }
 
     // Required
-    while (!chainIds) {
-        chainIds = stripWrappedQuotes((await qoa.prompt([CHAIN_IDS_PROMPT])).chainIds)
-    }
-
-    // Required
     while (!abi) {
         abi = stripWrappedQuotes((await qoa.prompt([ABI_PROMPT])).abi)
     }
 
-    return { group, chainIds, abi }
+    if (typeof isFactoryGroup !== 'boolean') {
+        const answer = ((await qoa.prompt([IS_FACTORY_GROUP_PROMPT])).isFactoryGroup || '')
+            .toLowerCase()
+            .trim()
+        isFactoryGroup = ['y', 'yes'].includes(answer)
+    }
+
+    return { group, abi, isFactoryGroup }
 }
 
 export async function promptAddContractsDetails(

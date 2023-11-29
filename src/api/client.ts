@@ -119,17 +119,17 @@ async function getContractRegistrationJob(
 
 async function createContractGroup(
     sessionToken: string,
-    chainIds: string[],
     nsp: string,
     name: string,
+    isFactoryGroup: boolean,
     abi: StringKeyMap[]
 ): Promise<CreateContractGroupResponse> {
     const { error } = await post(
         buildUrl(routes.CREATE_CONTRACT_GROUP),
         {
-            chainIds,
             nsp,
             name,
+            isFactoryGroup,
             abi,
         },
         formatAuthHeader(sessionToken)
