@@ -40,7 +40,7 @@ const denoConfigContents = `{
 
 const denoImportsContents = `{
     "imports": {
-        "@spec.dev/core": "https://esm.sh/@spec.dev/core@0.0.138"
+        "@spec.dev/core": "https://esm.sh/@spec.dev/core@0.0.140"
     }
 }`
 
@@ -50,7 +50,6 @@ const manifestFileContents = (
     namespace: string,
     name: string,
     version: string,
-    chains: string[],
     displayName?: string,
     description?: string
 ): string =>
@@ -61,7 +60,6 @@ const manifestFileContents = (
             version,
             displayName: displayName || '',
             description: description || '',
-            chains: chains.map((id) => parseInt(id)),
         },
         null,
         4
@@ -78,7 +76,7 @@ const specFileContents = (name: string, description?: string): string => {
     uniqueBy: ['someProperty', 'chainId'] 
 })
 class ${name} extends LiveTable {
-    // ...
+
     @Property()
     someProperty: Address
 
@@ -138,7 +136,6 @@ export function upsertLiveObject(
     cwd: string,
     namespace: string,
     name: string,
-    chains: string[],
     displayName?: string,
     description?: string
 ): StringKeyMap {
@@ -157,7 +154,7 @@ export function upsertLiveObject(
     // Create "manifest.json" file.
     createFileWithContents(
         path.join(liveObjectFolderPath, files.MANIFEST),
-        fileContents.manifest(namespace, name, DEFAULT_VERSION, chains, displayName, description)
+        fileContents.manifest(namespace, name, DEFAULT_VERSION, displayName, description)
     )
 
     // Create "spec.ts" file.

@@ -22,6 +22,7 @@ import addEnableCmd from './cmds/enable'
 import addRunCmd from './cmds/run'
 import addDocsCmd from './cmds/docs'
 import addPublishCmd from './cmds/publish'
+import addSyncCmd from './cmds/sync'
 
 addAddCmd(program)
 addCreateCmd(program)
@@ -33,6 +34,7 @@ addUseCmd(program)
 addShowCmd(program)
 addEnableCmd(program)
 addRunCmd(program)
+addSyncCmd(program)
 addDocsCmd(program)
 addInitCmd(program)
 addLoginCmd(program)

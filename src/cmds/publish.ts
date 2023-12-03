@@ -140,6 +140,7 @@ async function pollForPublishResult(
             spinner.stop()
 
             logSuccess(`Successfully published ${namespacedVersion}`)
+
             let liveTableUrl
             if (metadata.liveObjectUid) {
                 liveTableUrl = toLiveTableUrl(nsp, metadata.liveObjectUid)

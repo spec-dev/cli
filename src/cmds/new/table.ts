@@ -1,8 +1,6 @@
 import { logWarning, logSuccess } from '../../logger'
 import { createLiveObjectTemplate } from '../../templates'
 import { promptNewLiveObjectDetails } from '../../utils/prompt'
-import { unique } from '../../utils/formatters'
-import { chainIdsSet } from '../../utils/chains'
 
 const CMD = 'table'
 
@@ -30,19 +28,7 @@ async function newTable(fullName: string) {
 
     const promptResp = await promptNewLiveObjectDetails(namespace, name)
     ;({ namespace, name } = promptResp)
-    const { chainIds, displayName, description } = promptResp
-
-    // Parse & validate chain ids.
-    const chains = unique((chainIds || '').split(',').map((id) => id.trim()))
-    if (!chains.length) {
-        logWarning('Must provide at least 1 chain id.')
-        return
-    }
-    const invalidChainIds = chains.filter((id) => !chainIdsSet.has(id))
-    if (invalidChainIds.length) {
-        logWarning(`Invalid chain ids: ${invalidChainIds.join(', ')}`)
-        return
-    }
+    const { displayName, description } = promptResp
 
     if (!namespace || !name) {
         logWarning('Both "namespace" and "name" are required.')
@@ -52,7 +38,6 @@ async function newTable(fullName: string) {
     const { liveObjectId, success } = createLiveObjectTemplate(
         namespace,
         name,
-        chains,
         displayName,
         description
     )

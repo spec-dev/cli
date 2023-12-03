@@ -76,7 +76,9 @@ const CONTRACT_ADDRESSES_PROMPT = {
 
 const IS_FACTORY_GROUP_PROMPT = {
     type: 'input',
-    query: `${chalk.gray('?')} Is this group dynamically added to? ${chalk.gray(`(y/n):`)}`,
+    query: `${chalk.gray('?')} Will this group hold contracts created by a factory? ${chalk.gray(
+        `(y/n):`
+    )}`,
     handle: 'isFactoryGroup',
 }
 
@@ -119,12 +121,6 @@ export async function promptNewLiveObjectDetails(
         name = (await qoa.prompt([NAME_PROMPT])).name
     }
 
-    // Required
-    let chainIds = ''
-    while (!chainIds) {
-        chainIds = stripWrappedQuotes((await qoa.prompt([CHAIN_IDS_PROMPT])).chainIds)
-    }
-
     // Optional
     const displayName = (await qoa.prompt([DISPLAY_NAME_PROMPT])).displayName
     const description = (await qoa.prompt([DESCRIPTION_PROMPT])).description
@@ -132,7 +128,6 @@ export async function promptNewLiveObjectDetails(
     return {
         namespace,
         name,
-        chainIds,
         displayName,
         description,
     }

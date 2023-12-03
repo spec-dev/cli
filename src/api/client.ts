@@ -4,7 +4,6 @@ import constants from '../constants'
 import {
     LinkProjectResponse,
     LoginResponse,
-    RegisterContractsResponse,
     GetContractRegistrationJobResponse,
     GetAbiResponse,
     CreateContractGroupResponse,
@@ -85,21 +84,11 @@ async function getAbi(group: string): Promise<GetAbiResponse> {
 
 async function registerContracts(
     sessionToken: string,
-    chainId: string,
-    nsp: string,
-    name: string,
-    addresses: string[],
-    abi: StringKeyMap[]
-): Promise<RegisterContractsResponse> {
+    payload: StringKeyMap
+): Promise<GetContractRegistrationJobResponse> {
     const { data, error } = await post(
         buildUrl(routes.REGISTER_CONTRACTS),
-        {
-            chainId,
-            nsp,
-            name,
-            instances: addresses.map((address) => ({ address })),
-            abi,
-        },
+        payload,
         formatAuthHeader(sessionToken)
     )
     return error ? { error } : data

@@ -1,6 +1,7 @@
 --=======================================================
--- SPEC ROLE & SCHEMA
+-- SPEC ROLE / SCHEMA
 --=======================================================
+
 -- Create spec schema
 create schema if not exists spec;
 grant usage on schema spec to spec;
@@ -170,7 +171,7 @@ BEGIN
     EXECUTE format('SELECT is_enabled_above from spec.op_tracking where table_path = $1 and chain_id = $2')
         INTO block_number_floor
         USING table_path, chain_id::TEXT;
-    IF (block_number_floor IS NULL or block_number < block_number_floor) THEN
+    IF (block_number_floor IS NOT NULL AND block_number < block_number_floor) THEN
         RETURN rec;
     END IF;
 

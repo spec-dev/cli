@@ -12,7 +12,7 @@ import {
     TableSpec,
     ColumnSpec,
     BigInt,
-} from 'https://esm.sh/@spec.dev/core@0.0.138'
+} from 'https://esm.sh/@spec.dev/core@0.0.140'
 import { createEventClient, SpecEventClient } from 'https://esm.sh/@spec.dev/event-client@0.0.16'
 import {
     buildSelectQuery,
@@ -344,7 +344,7 @@ async function buildLiveObjectsMap(
         const resolvesMetadata = await doesLiveObjectResolveMetadata(specFilePath)
 
         const inputEventNames = await resolveInputsForLiveObject(
-            liveObjectInstance._eventHandlers,
+            liveObjectInstance._eventHandlers || {},
             routes.RESOLVE_EVENT_VERSIONS,
             'event',
             apiKey
@@ -352,7 +352,7 @@ async function buildLiveObjectsMap(
         if (inputEventNames === null) return null
 
         const inputCallNames = await resolveInputsForLiveObject(
-            liveObjectInstance._callHandlers,
+            liveObjectInstance._callHandlers || {},
             routes.RESOLVE_CALL_VERSIONS,
             'contract function call',
             apiKey

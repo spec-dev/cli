@@ -12,6 +12,7 @@ const constants: StringKeyMap = {
     HANDLERS_DIR_NAME: 'handlers',
     HOOKS_DIR_NAME: 'hooks',
     GRAPHQL_DIR_NAME: 'graphql',
+    DEFAULT_CONTRACT_GROUPS_SPEC_FILE_NAME: 'contracts.spec.json',
 
     // Global CLI config.
     SPEC_GLOBAL_DIR: path.join(os.homedir(), '.spec'),
@@ -24,7 +25,8 @@ const constants: StringKeyMap = {
     DOCS_ORIGIN: ev('SPEC_DOCS_ORIGIN', 'https://docs.spec.dev'),
 
     // Spec API config.
-    SPEC_API_ORIGIN: ev('SPEC_API_ORIGIN', 'https://api.spec.dev'),
+    // SPEC_API_ORIGIN: ev('SPEC_API_ORIGIN', 'https://api.spec.dev'),
+    SPEC_API_ORIGIN: 'http://localhost:7777',
     USER_AUTH_HEADER_NAME: 'Spec-User-Auth-Token',
 
     AUTH_HEADER_NAME: 'Spec-Auth-Token',

@@ -30,19 +30,12 @@ export interface GetAbiResponse {
     error?: string
     message?: string
 }
-export interface RegisterContractsResponse {
-    uid?: string
-    error?: string
-}
 
 export interface GetContractRegistrationJobResponse {
     uid?: string
     nsp?: string
-    contractName?: string
-    addresses?: string[]
-    chainId?: string
+    groups?: StringKeyMap[]
     status?: ContractRegistrationJobStatus
-    cursors?: StringKeyMap
     failed?: boolean
     error?: string
     createdAt?: string

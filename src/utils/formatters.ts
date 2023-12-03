@@ -110,3 +110,6 @@ export const toSpecNamespaceUrl = (nsp: string) => [constants.SPEC_ORIGIN, nsp].
 
 export const toLiveTableUrl = (nsp: string, uid: string): string =>
     `https://spec.dev/${nsp}/live-table/${uid}`
+
+export const toContractGroupsUrl = (nsp: string): string =>
+    `https://spec.dev/${nsp}/contract-groups`

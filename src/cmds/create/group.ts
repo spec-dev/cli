@@ -60,7 +60,7 @@ async function createGroup(
         nsp,
         contractName,
         promptResp.isFactoryGroup,
-        abi,
+        abi
     )
     if (createError) {
         logFailure(`Creating group failed: ${createError}`)
