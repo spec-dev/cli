@@ -25,8 +25,7 @@ const constants: StringKeyMap = {
     DOCS_ORIGIN: ev('SPEC_DOCS_ORIGIN', 'https://docs.spec.dev'),
 
     // Spec API config.
-    // SPEC_API_ORIGIN: ev('SPEC_API_ORIGIN', 'https://api.spec.dev'),
-    SPEC_API_ORIGIN: 'http://localhost:7777',
+    SPEC_API_ORIGIN: ev('SPEC_API_ORIGIN', 'https://api.spec.dev'),
     USER_AUTH_HEADER_NAME: 'Spec-User-Auth-Token',
 
     AUTH_HEADER_NAME: 'Spec-Auth-Token',
