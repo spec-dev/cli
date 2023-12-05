@@ -1,7 +1,7 @@
 {
     "name": "@spec.dev/cli",
     "description": "Spec CLI",
-    "version": "0.2.14",
+    "version": "0.2.15",
     "keywords": [
         "javascript",
         "typescript",
@@ -34,7 +34,7 @@
     },
     "dependencies": {
         "@ltd/j-toml": "1.30.0",
-        "@spec.dev/pm": "^0.0.2",
+        "@spec.dev/pm": "^0.0.3",
         "@streamparser/json": "^0.0.8",
         "ansi-diff-stream": "^1.2.1",
         "chalk": "4.1.0",
