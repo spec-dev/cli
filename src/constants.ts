@@ -13,6 +13,7 @@ const constants: StringKeyMap = {
     HOOKS_DIR_NAME: 'hooks',
     GRAPHQL_DIR_NAME: 'graphql',
     DEFAULT_CONTRACT_GROUPS_SPEC_FILE_NAME: 'contracts.spec.json',
+    DEFAULT_ABIS_FOLDER: 'abis',
 
     // Global CLI config.
     SPEC_GLOBAL_DIR: path.join(os.homedir(), '.spec'),

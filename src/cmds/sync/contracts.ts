@@ -108,7 +108,13 @@ function resolveContractGroupsPayload(contents: StringKeyMap): StringKeyMap {
             return { error: `No "name" given for contract group ${i}.` }
         }
         if (!group.abi) {
-            return { error: `No "abi" path given for contract group "${name}".` }
+            const defaultAbiLocation = [constants.DEFAULT_ABIS_FOLDER, `${name}.json`].join('/')
+            if (!fileExists(path.resolve(defaultAbiLocation))) {
+                return {
+                    error: `No "abi" given and no file at default location "./${defaultAbiLocation}"`,
+                }
+            }
+            group.abi = defaultAbiLocation
         }
         const { abi, isValid: isAbiValid } = resolveAbi(group.abi)
         if (!isAbiValid) return {}
