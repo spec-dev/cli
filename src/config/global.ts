@@ -1,8 +1,13 @@
 import { StringKeyMap } from '../types'
-import { createFileWithContents, fileExists, createDir } from '../utils/file'
-import toml, { Section } from '@ltd/j-toml'
+import {
+    createFileWithContents,
+    fileExists,
+    createDir,
+    readTomlConfigFile,
+    saveTomlConfigFile,
+} from '../utils/file'
+import { Section } from '@ltd/j-toml'
 import constants from '../constants'
-import fs from 'fs'
 import { toMap } from '../utils/formatters'
 import path from 'path'
 
@@ -136,31 +141,6 @@ export function readGlobalProjectsFile(): StringKeyMap {
 
 export function saveGlobalProjectsFile(table: any): StringKeyMap {
     return saveTomlConfigFile(constants.SPEC_GLOBAL_PROJECTS_PATH, table)
-}
-
-export function readTomlConfigFile(path: string): StringKeyMap {
-    if (!fileExists(path)) {
-        return { data: {} }
-    }
-    try {
-        const data = toml.parse(fs.readFileSync(path, 'utf-8'))
-        return { data }
-    } catch (error) {
-        return { error }
-    }
-}
-
-export function saveTomlConfigFile(path: string, table: any): StringKeyMap {
-    let error
-    try {
-        createFileWithContents(
-            path,
-            toml.stringify(table, { newlineAround: 'section', newline: '\n' })
-        )
-    } catch (err) {
-        error = err
-    }
-    return { error }
 }
 
 export function saveProjectComposeEnvs(projectId: string, envs: StringKeyMap): StringKeyMap {

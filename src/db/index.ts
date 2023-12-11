@@ -85,11 +85,11 @@ export function getCurrentDbUser(): StringKeyMap {
     }
 }
 
-export function upsertLiveObjectTestingDB(): StringKeyMap {
+export function upsertDatabase(name: string): StringKeyMap {
     let exists = false
     try {
         const out = execSync(
-            `psql -c "select datname FROM pg_catalog.pg_database where lower(datname) = lower('${constants.LIVE_OBJECT_TESTING_DB_NAME}')"`
+            `psql -c "select datname FROM pg_catalog.pg_database where lower(datname) = lower('${name}')"`
         )
         exists = out.toString().trim().split('\n').length > 3
     } catch (err) {
@@ -100,7 +100,7 @@ export function upsertLiveObjectTestingDB(): StringKeyMap {
     }
 
     try {
-        execSync(`createdb ${constants.LIVE_OBJECT_TESTING_DB_NAME}`)
+        execSync(`createdb ${name}`)
     } catch (err) {
         return { error: err }
     }

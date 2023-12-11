@@ -79,8 +79,15 @@ export async function addTable(
         return
     }
 
-    const { name } = fromNamespacedVersion(lov.name)
-    const tableName = opts.name || camelToSnake(name)
+    const { nsp, name } = fromNamespacedVersion(lov.name)
+    const isContractEvent = nsp.includes('.')
+
+    // Add "_event" as a suffix to the table if it's an event
+    // table and the table name wasn't explicitly specified.
+    let tableName = opts.name || camelToSnake(name)
+    if (!opts.name && isContractEvent) {
+        tableName += '_event'
+    }
     const tablePath = [schemaName, tableName].join('.')
 
     if (!opts.configOnly) {

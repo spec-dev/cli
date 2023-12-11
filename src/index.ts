@@ -23,6 +23,7 @@ import addRunCmd from './cmds/run'
 import addDocsCmd from './cmds/docs'
 import addPublishCmd from './cmds/publish'
 import addSyncCmd from './cmds/sync'
+import addQuickstartCmd from './cmds/quickstart'
 
 addAddCmd(program)
 addCreateCmd(program)
@@ -37,6 +38,7 @@ addRunCmd(program)
 addSyncCmd(program)
 addDocsCmd(program)
 addInitCmd(program)
+addQuickstartCmd(program)
 addLoginCmd(program)
 addLogoutCmd(program)
 addLogsCmd(program)

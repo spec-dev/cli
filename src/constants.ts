@@ -34,6 +34,7 @@ const constants: StringKeyMap = {
     // DB defaults.
     SPEC_DB_USER: 'spec',
     DB_PORT: 5432,
+    QUICKSTART_DB_NAME: 'spec',
 
     // Live Table testing.
     LIVE_OBJECT_TESTING_DB_NAME: 'spec-test',

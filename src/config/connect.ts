@@ -1,4 +1,4 @@
-import { createFileWithContents, fileExists } from '../utils/file'
+import { createFileWithContents, fileExists, saveTomlConfigFile } from '../utils/file'
 import constants from '../constants'
 import toml from '@ltd/j-toml'
 import fs from 'fs'
@@ -52,4 +52,36 @@ export function getDBConfig(projectDirPath: string, projectEnv: string): StringK
     } catch (error) {
         return { error }
     }
+}
+
+export function updateDatabaseNameForEnv(
+    projectDirPath: string,
+    env: string,
+    dbName: string
+): StringKeyMap {
+    const connectFilePath = path.join(
+        projectDirPath,
+        constants.SPEC_CONFIG_DIR_NAME,
+        constants.CONNECTION_CONFIG_FILE_NAME
+    )
+
+    // Ensure connection config file exists.
+    if (!fileExists(connectFilePath)) {
+        return { error: `No file found at ${connectFilePath}` }
+    }
+
+    // Get existing config.
+    let config
+    try {
+        config = toml.parse(fs.readFileSync(connectFilePath, 'utf-8')) || {}
+    } catch (error) {
+        return { error }
+    }
+
+    if (!config[env]) {
+        return { error: `No environment named ${env} inside connect.toml` }
+    }
+
+    config[env].name = dbName
+    return saveTomlConfigFile(connectFilePath, config)
 }

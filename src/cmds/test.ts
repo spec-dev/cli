@@ -3,7 +3,7 @@ import constants from '../constants'
 import { ensureDenoInstalled, testLiveObject } from '../utils/deno'
 import msg from '../utils/msg'
 import { toNumber, toDate } from '../utils/formatters'
-import { psqlInstalled, upsertLiveObjectTestingDB } from '../db'
+import { psqlInstalled, upsertDatabase } from '../db'
 import { getProjectCreds, getCurrentProjectId } from '../config/global'
 import { chainIdsSet } from '../utils/chains'
 import { addDays, subtractDays } from '../utils/date'
@@ -53,7 +53,7 @@ async function test(name, opts) {
     }
 
     // Ensure the testing database exists locally.
-    const { error: dbError } = upsertLiveObjectTestingDB()
+    const { error: dbError } = upsertDatabase(constants.LIVE_OBJECT_TESTING_DB_NAME)
     if (dbError) {
         logFailure(`Failed to upsert the live object testing database locally: ${dbError}`)
         return
